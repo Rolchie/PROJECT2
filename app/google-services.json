@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "273731444239",
+    "project_id": "project-2-c432e",
+    "storage_bucket": "project-2-c432e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:273731444239:android:c0d37d8485020a3cdb0d7a",
+        "android_client_info": {
+          "package_name": "com.maramagagriculturalaid.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1q5pHdkbu0VxuXtOiNL-P__IZ464BOkk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
