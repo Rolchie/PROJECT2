@@ -5,13 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Your main content goes here -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout2"
         android:layout_width="match_parent"
         android:layout_height="813dp"
         android:layout_marginBottom="?attr/actionBarSize">
-        <!-- Your main app content -->
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.google.android.material.bottomappbar.BottomAppBar
@@ -23,7 +22,6 @@
         app:fabCradleMargin="10dp"
         app:fabCradleRoundedCornerRadius="60dp"/>
 
-    <!-- Bottom Navigation with cutout for FAB -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
@@ -46,7 +44,5 @@
         app:fabSize="normal"
         app:layout_anchor="@+id/constraintLayout2"
         app:layout_anchorGravity="bottom|center" />
-
-    <!-- Floating Action Button -->
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
