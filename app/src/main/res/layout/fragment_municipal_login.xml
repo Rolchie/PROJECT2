@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/ContainerGreen"
     android:padding="24dp">
 
     <LinearLayout
@@ -17,7 +18,7 @@
             android:id="@+id/tv_welcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:layout_marginBottom="16dp"
             android:text="Welcome!"
             android:textColor="#000000"
@@ -28,7 +29,7 @@
             android:id="@+id/text"
             android:layout_width="wrap_content"
             android:layout_height="32dp"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:layout_marginBottom="16dp"
             android:alpha=".7"
             android:text="Please use your Municipal account"
@@ -36,36 +37,53 @@
             android:textSize="15sp"
             android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/et_username"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginBottom="12dp"
-            android:background="@drawable/edittxtbkg"
-            android:hint="Email"
-            android:padding="10dp"
-            android:textColor="#000000"
-            android:textColorHint="#888888" />
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
 
-        <EditText
-            android:id="@+id/et_password"
+            <com.google.android.material.textfield.TextInputEditText
+                android:drawableStart="@drawable/baseline_email_24"
+                android:id="@+id/et_username"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/edittxtbkg"
+                android:hint="Email"
+                android:padding="10dp"
+                android:textColor="#000000"
+                android:textColorHint="#888888" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:background="@drawable/edittxtbkg"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:padding="10dp"
-            android:textColor="#000000"
-            android:textColorHint="#888888" />
+            app:passwordToggleEnabled="true"
+            app:passwordToggleDrawable="@drawable/baseline_remove_red_eye_24"
+            app:passwordToggleTint="@color/black">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_password"
+                android:drawableStart="@drawable/baseline_lock_24"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/edittxtbkg"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:padding="10dp"
+                android:textColor="#000000"
+                android:textColorHint="#888888" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:visibility="gone"/>
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/MunicipalLogin"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -73,7 +91,6 @@
             android:text="Log In"
             android:textColor="#FFFFFF"
             android:textStyle="bold"/>
-
 
     </LinearLayout>
 </RelativeLayout>
