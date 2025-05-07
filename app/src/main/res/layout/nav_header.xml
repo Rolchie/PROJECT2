@@ -20,7 +20,7 @@
         android:id="@+id/BarangayName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Barangay Dologon"
+        android:text="BarangayName"
         android:textColor="@color/white"
         android:textStyle="bold"
         android:textSize="16sp" />
@@ -29,8 +29,8 @@
         android:id="@+id/BarangayEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="BarangayEmail"
         android:layout_marginTop="4dp"
-        android:text="barangayDologon@gmail.com"
         android:textColor="@color/white"
         android:textSize="14sp" />
 

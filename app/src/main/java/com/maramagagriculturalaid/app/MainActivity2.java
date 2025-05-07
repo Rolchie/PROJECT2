@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -26,20 +28,24 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.maramagagriculturalaid.app.databinding.ActivityMain2Binding;
 
 public class MainActivity2 extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     ActivityMain2Binding binding;
+    private Dialog bottomDrawerDialog;
     private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
-
-    private FirebaseFirestore db;
+    NavigationView navigationView;
+    FirebaseFirestore db;
     private FirebaseAuth mAuth;
-
-    private TextView txtBarangayName, txtEmail;
-    private Button btnLogout;
+    String userId;
+    TextView txtBarangayName, txtEmail;
+    Button btnLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +57,7 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         navigationView = binding.navigationView;
 
         // Set NavigationView listener
-        navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setNavigationItemSelectedListener(MainActivity2.this);
 
         // Set up bottom nav
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
@@ -78,28 +84,40 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
             return false;
         });
 
-        // FAB click
-        binding.fab.setOnClickListener(v -> showBottomDialog());
+        initBottomDrawerDialog();
+        binding.fab.setOnClickListener(v -> toggleBottomDrawer());
 
-        // Show Home fragment by default
         replaceFragment(new HomeFragment());
 
-        // Firebase setup
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        // Get header view for drawer items
         View headerView = navigationView.getHeaderView(0);
         txtBarangayName = headerView.findViewById(R.id.BarangayName);
         txtEmail = headerView.findViewById(R.id.BarangayEmail);
         btnLogout = headerView.findViewById(R.id.logout);
 
-        btnLogout.setOnClickListener(v -> {
-            mAuth.signOut();
-            Toast.makeText(MainActivity2.this, "Logged out", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(MainActivity2.this, MainActivity.class));
-            finish();
-        });
+
+
+//        DocumentReference docRef = db.collection("users").document(userId);
+//        docRef.get().addOnCompleteListener(task -> {
+//            if (task.isSuccessful()) {
+//                DocumentSnapshot document = task.getResult();
+//                if (document.exists()) {
+//                    String name = document.getString("Name");
+//                    String email = document.getString("Email");
+//
+//                    if (name != null) txtBarangayName.setText(name);
+//                    if (email != null) txtEmail.setText(email);
+//                } else {
+//                    Log.d("FirestoreDebug", "Document not found");
+//                    Toast.makeText(this, "User document not found", Toast.LENGTH_SHORT).show();
+//                }
+//            } else {
+//                Log.e("FirestoreDebug", "Fetch failed: ", task.getException());
+//                Toast.makeText(this, "Failed to load user info", Toast.LENGTH_SHORT).show();
+//            }
+//        });
     }
 
     @Override
@@ -116,6 +134,19 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         } else if (itemId == R.id.nav_about) {
             replaceFragment(new AboutUsFragment());
             return true;
+        } else if (itemId == R.id.logout) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Confirm Logout")
+                    .setMessage("Are you sure you want to log out?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        mAuth.signOut();
+                        Toast.makeText(MainActivity2.this, "Logged out", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(MainActivity2.this, MainActivity.class));
+                        finish();
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+            return true;
         }
 
         return false;
@@ -128,40 +159,47 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         transaction.commit();
     }
 
-    private void showBottomDialog() {
-        final Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.bottom_sheet_layout);
+    private void toggleBottomDrawer() {
+        if (bottomDrawerDialog != null && bottomDrawerDialog.isShowing()) {
+            bottomDrawerDialog.dismiss();
+        } else {
+            bottomDrawerDialog.show();
+        }
+    }
 
-        LinearLayout seeds = dialog.findViewById(R.id.SeedsFertilizers);
-        LinearLayout livestock = dialog.findViewById(R.id.LivestockSupport);
-        LinearLayout money = dialog.findViewById(R.id.MonetarySupport);
-        ImageView cancelButton = dialog.findViewById(R.id.cancelButton);
+    private void initBottomDrawerDialog() {
+        bottomDrawerDialog = new Dialog(this);
+        bottomDrawerDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        bottomDrawerDialog.setContentView(R.layout.bottom_sheet_layout);
+
+        LinearLayout seeds = bottomDrawerDialog.findViewById(R.id.SeedsFertilizers);
+        LinearLayout livestock = bottomDrawerDialog.findViewById(R.id.LivestockSupport);
+        LinearLayout money = bottomDrawerDialog.findViewById(R.id.MonetarySupport);
+        ImageView cancelButton = bottomDrawerDialog.findViewById(R.id.cancelButton);
 
         seeds.setOnClickListener(v -> {
-            dialog.dismiss();
+            bottomDrawerDialog.dismiss();
             Toast.makeText(MainActivity2.this, "Seeds and Fertilizers clicked", Toast.LENGTH_SHORT).show();
         });
 
         livestock.setOnClickListener(v -> {
-            dialog.dismiss();
+            bottomDrawerDialog.dismiss();
             Toast.makeText(MainActivity2.this, "Livestock Support clicked", Toast.LENGTH_SHORT).show();
         });
 
         money.setOnClickListener(v -> {
-            dialog.dismiss();
+            bottomDrawerDialog.dismiss();
             Toast.makeText(MainActivity2.this, "Monetary Support clicked", Toast.LENGTH_SHORT).show();
         });
 
-        cancelButton.setOnClickListener(v -> dialog.dismiss());
+        cancelButton.setOnClickListener(v -> bottomDrawerDialog.dismiss());
 
-        dialog.show();
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            dialog.getWindow().getAttributes().windowAnimations =
-                    com.google.android.material.R.style.MaterialAlertDialog_Material3_Animation;
-            dialog.getWindow().setGravity(Gravity.BOTTOM);
+        if (bottomDrawerDialog.getWindow() != null) {
+            bottomDrawerDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            bottomDrawerDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            bottomDrawerDialog.getWindow().setWindowAnimations(R.style.BottomDialogAnimation);
+            bottomDrawerDialog.getWindow().setGravity(Gravity.BOTTOM);
         }
     }
+
 }

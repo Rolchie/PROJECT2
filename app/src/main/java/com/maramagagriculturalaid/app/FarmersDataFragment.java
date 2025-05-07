@@ -1,64 +1,157 @@
 package com.maramagagriculturalaid.app;
 
+// import android.content.Intent; // Not needed for fragment navigation
+import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link FarmersDataFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class FarmersDataFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private static final String TAG = "FarmersDataFragment";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private TextInputEditText editTextFarmerId;
+    private MaterialButton buttonSearch, buttonViewAllFarmers, buttonAddFarmer;
+    private ProgressBar progressBar;
+    private FirebaseFirestore db;
 
-    public FarmersDataFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FarmersDataFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static FarmersDataFragment newInstance(String param1, String param2) {
-        FarmersDataFragment fragment = new FarmersDataFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
+    @Nullable
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_farmers_data, container, false);
+
+        // Initialize Firebase
+        db = FirebaseFirestore.getInstance();
+
+        // Initialize views
+        editTextFarmerId = view.findViewById(R.id.editTextFarmerId);
+        buttonSearch = view.findViewById(R.id.buttonSearch);
+        buttonViewAllFarmers = view.findViewById(R.id.buttonViewAllFarmers);
+        buttonAddFarmer = view.findViewById(R.id.buttonAddFarmer);
+        progressBar = view.findViewById(R.id.progressBar);
+
+        // Set up click listeners
+        setupClickListeners();
+
+        return view;
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_farmers_data, container, false);
+    private void setupClickListeners() {
+        // Search for a specific farmer by ID
+        buttonSearch.setOnClickListener(v -> {
+            String farmerId = editTextFarmerId.getText().toString().trim();
+            if (TextUtils.isEmpty(farmerId)) {
+                editTextFarmerId.setError("Please enter a Farmer ID");
+                return;
+            }
+
+            searchFarmerById(farmerId);
+        });
+
+        // View all farmers
+        buttonViewAllFarmers.setOnClickListener(v -> {
+            loadAllFarmers();
+        });
+
+        // Add a new farmer
+        buttonAddFarmer.setOnClickListener(v -> {
+            // Navigate to add farmer screen
+            navigateToAddFarmer();
+        });
+    }
+
+    private void searchFarmerById(String farmerId) {
+        showProgressBar(true);
+
+        db.collection("farmers")
+                .whereEqualTo("farmerId", farmerId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    showProgressBar(false);
+
+                    if (task.isSuccessful()) {
+                        if (task.getResult().isEmpty()) {
+                            Toast.makeText(getContext(), "No farmer found with ID: " + farmerId, Toast.LENGTH_LONG).show();
+                        } else {
+                            // Farmer found, navigate to details screen
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                String documentId = document.getId();
+                                navigateToFarmerDetails(documentId);
+                                break; // Should only be one result
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "Error searching for farmer", task.getException());
+                        Toast.makeText(getContext(), "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void loadAllFarmers() {
+        showProgressBar(true);
+
+        db.collection("farmers")
+                .get()
+                .addOnCompleteListener(task -> {
+                    showProgressBar(false);
+
+                    if (task.isSuccessful()) {
+                        List<String> farmerIds = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            farmerIds.add(document.getId());
+                        }
+
+                        if (farmerIds.isEmpty()) {
+                            Toast.makeText(getContext(), "No farmers found in the database", Toast.LENGTH_LONG).show();
+                        } else {
+                            // Navigate to list screen with all farmers
+                            navigateToFarmersList(farmerIds);
+                        }
+                    } else {
+                        Log.e(TAG, "Error loading farmers", task.getException());
+                        Toast.makeText(getContext(), "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void navigateToFarmerDetails(String farmerId) {
+        Intent intent = new Intent(requireActivity(), FarmersDetailsActivity.class);
+        intent.putExtra("FARMER_ID", farmerId);
+        startActivity(intent);
+    }
+
+    private void navigateToFarmersList(List<String> farmerIds) {
+        Intent intent = new Intent(requireActivity(), FarmersListActivity.class);
+        intent.putStringArrayListExtra("FARMER_IDS", new ArrayList<>(farmerIds));
+        startActivity(intent);
+    }
+
+    private void navigateToAddFarmer() {
+        Intent intent = new Intent(requireActivity(), AddFarmerAcitivity.class);
+        startActivity(intent);
+    }
+
+    private void showProgressBar(boolean show) {
+        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        buttonSearch.setEnabled(!show);
+        buttonViewAllFarmers.setEnabled(!show);
+        buttonAddFarmer.setEnabled(!show);
     }
 }

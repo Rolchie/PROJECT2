@@ -61,6 +61,7 @@
             app:layout_constraintVertical_bias="0" />
 
         <com.google.android.material.tabs.TabLayout
+            app:tabBackground="@color/ContainerGreen"
             android:id="@+id/tab_layout"
             android:layout_width="match_parent"
             android:layout_height="60dp"
