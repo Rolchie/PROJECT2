@@ -1,5 +1,6 @@
 package com.maramagagriculturalaid.app;
 
+// import android.content.Intent; // Not needed for fragment navigation
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -131,19 +132,19 @@ public class FarmersDataFragment extends Fragment {
     }
 
     private void navigateToFarmerDetails(String farmerId) {
-        Intent intent = new Intent(requireContext(), FarmersDetialsFragment.class);
+        Intent intent = new Intent(requireActivity(), FarmersDetailsActivity.class);
         intent.putExtra("FARMER_ID", farmerId);
         startActivity(intent);
     }
 
     private void navigateToFarmersList(List<String> farmerIds) {
-        Intent intent = new Intent(requireContext(), FarmersListFragment.class);
+        Intent intent = new Intent(requireActivity(), FarmersListActivity.class);
         intent.putStringArrayListExtra("FARMER_IDS", new ArrayList<>(farmerIds));
         startActivity(intent);
     }
 
     private void navigateToAddFarmer() {
-        Intent intent = new Intent(requireContext(), AddFarmerFragment.class);
+        Intent intent = new Intent(requireActivity(), AddFarmerAcitivity.class);
         startActivity(intent);
     }
 

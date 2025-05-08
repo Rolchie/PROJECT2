@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -26,8 +28,11 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.maramagagriculturalaid.app.databinding.ActivityMain2Binding;
 
 public class MainActivity2 extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -38,7 +43,7 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
     NavigationView navigationView;
     FirebaseFirestore db;
     private FirebaseAuth mAuth;
-    String rtvBarangayName, rtvEmail, loggedEmail;
+    String userId;
     TextView txtBarangayName, txtEmail;
     Button btnLogout;
 
@@ -92,27 +97,27 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         txtEmail = headerView.findViewById(R.id.BarangayEmail);
         btnLogout = headerView.findViewById(R.id.logout);
 
-        if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
-            loggedEmail = mAuth.getCurrentUser().getEmail();
-        } else {
-            Toast.makeText(MainActivity2.this, "Error: No users found!", Toast.LENGTH_SHORT).show();
-            return; // prevent crash
-        }
 
-        db.collection("users").document(loggedEmail).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot documentSnapshot = task.getResult();
-                        if (documentSnapshot != null && documentSnapshot.exists()) {
-                            rtvEmail = documentSnapshot.getString("Email");
-                            rtvBarangayName = documentSnapshot.getString("Name");
 
-                            txtBarangayName.setText(rtvBarangayName);
-                            txtEmail.setText(rtvEmail);
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(MainActivity2.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+//        DocumentReference docRef = db.collection("users").document(userId);
+//        docRef.get().addOnCompleteListener(task -> {
+//            if (task.isSuccessful()) {
+//                DocumentSnapshot document = task.getResult();
+//                if (document.exists()) {
+//                    String name = document.getString("Name");
+//                    String email = document.getString("Email");
+//
+//                    if (name != null) txtBarangayName.setText(name);
+//                    if (email != null) txtEmail.setText(email);
+//                } else {
+//                    Log.d("FirestoreDebug", "Document not found");
+//                    Toast.makeText(this, "User document not found", Toast.LENGTH_SHORT).show();
+//                }
+//            } else {
+//                Log.e("FirestoreDebug", "Fetch failed: ", task.getException());
+//                Toast.makeText(this, "Failed to load user info", Toast.LENGTH_SHORT).show();
+//            }
+//        });
     }
 
     @Override

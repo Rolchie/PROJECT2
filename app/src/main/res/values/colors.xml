@@ -8,4 +8,6 @@
     <color name="ButtonGreen">#4CAF50</color>
     <color name="ContainerGreen">#D8EACF</color>
     <color name="BackgroundGreen">#B5E5A7</color>
+    <color name="dark_gray">#666666</color>
+    <color name="red">#ff0000</color>
 </resources>
