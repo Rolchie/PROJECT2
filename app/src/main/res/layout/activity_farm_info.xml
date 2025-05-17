@@ -6,580 +6,1166 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/BackgroundGreen"
-    tools:context=".FarmInfoActivity">
+    tools:context=".FarmersData.FarmInfoActivity">
 
-    <!-- Title Bar -->
-    <LinearLayout
-        android:id="@+id/title_bar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/ButtonGreen"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        app:layout_constraintTop_toTopOf="parent">
+    <!-- Back Button and Title directly on the green background -->
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btn_back"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_back"
+        android:contentDescription="Back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/btn_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_back"
-            android:contentDescription="Back" />
-
-        <androidx.appcompat.widget.AppCompatTextView
-            android:id="@+id/tv_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="16dp"
-            android:text="Farm Information"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- Farm Type Selection -->
-    <LinearLayout
-        android:id="@+id/farm_type_container"
-        android:layout_width="match_parent"
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tv_title"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="@color/BackgroundGreen"
-        app:layout_constraintTop_toBottomOf="@id/title_bar">
+        android:layout_marginEnd="16dp"
+        android:gravity="center"
+        android:text="Farm Information"
+        android:textColor="@android:color/black"
+        android:textSize="20sp"
+        app:fontFamily="@font/lato_black"
+        app:layout_constraintBottom_toBottomOf="@id/btn_back"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@id/btn_back"
+        app:layout_constraintTop_toTopOf="@id/btn_back"
+        app:layout_constraintVertical_bias="0.571" />
 
-        <androidx.appcompat.widget.AppCompatTextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Farm Type"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp" />
-
-        <RadioGroup
-            android:id="@+id/rg_farm_type"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <androidx.appcompat.widget.AppCompatRadioButton
-                android:id="@+id/rb_crop"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/radio_selector"
-                android:button="@null"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="Crop"
-                android:textColor="@drawable/radio_text_selector" />
-
-            <androidx.appcompat.widget.AppCompatRadioButton
-                android:id="@+id/rb_livestock"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/radio_selector"
-                android:button="@null"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="Livestock"
-                android:textColor="@drawable/radio_text_selector" />
-
-            <androidx.appcompat.widget.AppCompatRadioButton
-                android:id="@+id/rb_mixed"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/radio_selector"
-                android:button="@null"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="Mixed"
-                android:textColor="@drawable/radio_text_selector" />
-        </RadioGroup>
-    </LinearLayout>
-
-    <!-- Form Content -->
-    <ViewFlipper
-        android:id="@+id/view_flipper"
+    <View
+        android:id="@+id/white_background"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/farm_type_container"
-        app:layout_constraintBottom_toTopOf="@id/btn_save">
+        android:layout_marginTop="24dp"
+        android:background="@drawable/main_bg"
+        android:elevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/btn_back"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- Crop Farm Form -->
-        <ScrollView
+    <!-- All content inside the white background -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:scrollbarStyle="outsideOverlay"
+        android:paddingBottom="16dp"
+        android:elevation="3dp"
+        app:layout_constraintTop_toTopOf="@id/white_background"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:paddingBottom="80dp"> <!-- Extra padding for the Save button -->
+
+            <!-- Process Indicator -->
             <LinearLayout
+                android:id="@+id/process_indicator_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingHorizontal="16dp"
+                android:paddingTop="24dp"
+                app:layout_constraintTop_toTopOf="parent">
 
-                <!-- Location Section -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Location"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Municipal -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Municipal"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_municipal_crop"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Maramag"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Barangay -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Barangay"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <androidx.appcompat.widget.AppCompatSpinner
-                    android:id="@+id/spinner_barangay_crop"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Street Name -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Street Name, Building, House No."
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_street_crop"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Purok 1"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- Crops Grown and Lot Size -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <!-- Crops Grown -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginEnd="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Crops Grown"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_crops_grown"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="text"
-                            android:hint="Rice" />
-                    </LinearLayout>
-
-                    <!-- Lot Size -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Size of Lot (edit)"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_lot_size"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="text"
-                            android:hint="750sqm" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-        </ScrollView>
-
-        <!-- Livestock Farm Form -->
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Location Section -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Location"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Municipal -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Municipal"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_municipal_livestock"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Maramag"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Barangay -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Barangay"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/spinner_barangay_livestock"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Street Name -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Street Name, Building, House No."
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_street_livestock"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Purok 1"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- Livestock and Number of Livestock -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <!-- Livestock -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginEnd="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Livestock"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_livestock"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="text"
-                            android:hint="None" />
-                    </LinearLayout>
-
-                    <!-- Number of Livestock -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="No. of Livestock"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_no_livestock"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="number"
-                            android:hint="None" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-        </ScrollView>
-
-        <!-- Mixed Farm Form -->
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Location Section -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Location"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Municipal -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Municipal"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_municipal_mixed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Maramag"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Barangay -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Barangay"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/spinner_barangay_mixed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Street Name -->
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Street Name, Building, House No."
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/et_street_mixed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/edittxtbkg"
-                    android:padding="12dp"
-                    android:inputType="text"
-                    android:hint="Purok 1"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- Crops Grown and Lot Size -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <!-- Crops Grown -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginEnd="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Crops Grown"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_crops_grown_mixed"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="text"
-                            android:hint="Rice" />
-                    </LinearLayout>
-
-                    <!-- Lot Size -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="8dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Size of Lot (edit)"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_lot_size_mixed"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
-                            android:padding="12dp"
-                            android:inputType="text"
-                            android:hint="750sqm" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Livestock and Number of Livestock -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="16dp">
+                    android:gravity="center_vertical">
 
-                    <!-- Livestock -->
-                    <LinearLayout
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
+                        android:text="Step 2 of 3"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/step_progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:progress="66"
+                    android:progressTint="@color/ButtonGreen"
+                    android:progressBackgroundTint="#E0E0E0" />
+            </LinearLayout>
+
+            <!-- Farm Type Selection -->
+            <LinearLayout
+                android:id="@+id/farm_type_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                app:layout_constraintTop_toBottomOf="@id/process_indicator_container">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Farm Type"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:fontFamily="@font/lato_black" />
+
+                <RadioGroup
+                    android:id="@+id/rg_farm_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/rb_crop"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginEnd="8dp">
+                        android:background="@drawable/radio_selector"
+                        android:button="@null"
+                        android:fontFamily="@font/roboto"
+                        android:gravity="center"
+                        android:padding="12dp"
+                        android:text="Crop"
+                        android:textColor="@drawable/radio_text_selector" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/rb_livestock"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/radio_selector"
+                        android:button="@null"
+                        android:fontFamily="@font/roboto"
+                        android:gravity="center"
+                        android:padding="12dp"
+                        android:text="Livestock"
+                        android:textColor="@drawable/radio_text_selector" />
+
+                    <androidx.appcompat.widget.AppCompatRadioButton
+                        android:id="@+id/rb_mixed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/radio_selector"
+                        android:button="@null"
+                        android:fontFamily="@font/roboto"
+                        android:gravity="center"
+                        android:padding="12dp"
+                        android:text="Mixed"
+                        android:textColor="@drawable/radio_text_selector" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <!-- Form Content -->
+            <ViewFlipper
+                android:id="@+id/view_flipper"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/farm_type_container">
+
+                <!-- Crop Farm Form -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Location Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Municipal (Now as TextView) -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Municipal"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Location icon"
+                            app:tint="@color/ButtonGreen" />
 
                         <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Livestock"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <EditText
-                            android:id="@+id/et_livestock_mixed"
+                            android:id="@+id/tv_municipal_crop"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:text="Maramag"
+                            android:textColor="@android:color/black" />
+                    </LinearLayout>
+
+                    <!-- Barangay -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Barangay"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Barangay Spinner - Add dropdown icon -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Barangay icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_barangay_crop"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Street Name -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Street Name, Building, House No."
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_home_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Street icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_street_crop"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
                             android:padding="12dp"
                             android:inputType="text"
-                            android:hint="None" />
+                            android:hint="Purok 1" />
                     </LinearLayout>
 
-                    <!-- Number of Livestock -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <!-- Crops Grown Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="8dp">
+                        android:text="Crop Information"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
 
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:layout_width="wrap_content"
+                    <!-- Crops Grown -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Crops Grown"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Crops Grown Spinner -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/img_15"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Crops icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_crops_grown"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="No. of Livestock"
-                            android:textColor="@android:color/black"
-                            android:textSize="14sp"
-                            android:layout_marginBottom="4dp" />
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Other Crop field (initially hidden) -->
+                    <LinearLayout
+                        android:id="@+id/layout_other_crop"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/img_15"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Other crop icon"
+                            app:tint="@color/ButtonGreen" />
 
                         <EditText
-                            android:id="@+id/et_no_livestock_mixed"
+                            android:id="@+id/et_other_crop"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/edittxtbkg"
+                            android:background="@null"
                             android:padding="12dp"
-                            android:inputType="number"
-                            android:hint="None" />
+                            android:inputType="text"
+                            android:hint="Please specify other crop"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <!-- Lot Size -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Size of Lot"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Size input field -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_aspect_ratio_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Size icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <!-- Size input -->
+                        <EditText
+                            android:id="@+id/et_lot_size"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="2"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="numberDecimal"
+                            android:hint="Enter size"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:textColorHint="#757575"
+                            android:minHeight="48dp" />
+                    </LinearLayout>
+
+                    <!-- Unit selection -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_straighten_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Unit icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Unit:"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:layout_marginStart="4dp" />
+
+                        <!-- Unit selection spinner -->
+                        <Spinner
+                            android:id="@+id/spinner_unit"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:backgroundTint="@color/white"
+                            android:spinnerMode="dropdown"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Unit dropdown icon"
+                            app:tint="@color/ButtonGreen" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-        </ScrollView>
-    </ViewFlipper>
 
-    <!-- Save Button -->
+                <!-- Livestock Farm Form -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Location Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Municipal -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Municipal"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Location icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tv_municipal_livestock"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:text="Maramag"
+                            android:textColor="@android:color/black" />
+                    </LinearLayout>
+
+                    <!-- Barangay -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Barangay"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Barangay icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_barangay_livestock"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Street Name -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Street Name, Building, House No."
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_home_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Street icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_street_livestock"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="text"
+                            android:hint="Purok 1" />
+                    </LinearLayout>
+
+                    <!-- Livestock Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Livestock Information"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Livestock Type -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Livestock Type"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Livestock Type Spinner -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_pets_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Livestock icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_livestock_type"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Other Livestock field (initially hidden) -->
+                    <LinearLayout
+                        android:id="@+id/layout_other_livestock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_pets_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Other livestock icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_other_livestock"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="text"
+                            android:hint="Please specify other livestock"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <!-- Number of Animals -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Number of Animals"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_tag_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Number icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_animal_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="number"
+                            android:hint="Enter number of animals"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:textColorHint="#757575"
+                            android:minHeight="48dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Mixed Farm Form -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Location Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Municipal -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Municipal"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Location icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tv_municipal_mixed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:text="Maramag"
+                            android:textColor="@android:color/black" />
+                    </LinearLayout>
+
+                    <!-- Barangay -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Barangay"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_location_on_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Barangay icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_barangay_mixed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Street Name -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Street Name, Building, House No."
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_home_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Street icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_street_mixed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="text"
+                            android:hint="Purok 1" />
+                    </LinearLayout>
+
+                    <!-- Crop Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Crop Information"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Crops Grown -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Crops Grown"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Crops Grown Spinner -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/img_15"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Crops icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_crops_grown_mixed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Other Crop field (initially hidden) -->
+                    <LinearLayout
+                        android:id="@+id/layout_other_crop_mixed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/img_15"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Other crop icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_other_crop_mixed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="text"
+                            android:hint="Please specify other crop"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <!-- Lot Size -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Size of Lot"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Size input field -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_aspect_ratio_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Size icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <!-- Size input -->
+                        <EditText
+                            android:id="@+id/et_lot_size_mixed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="2"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="numberDecimal"
+                            android:hint="Enter size"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:textColorHint="#757575"
+                            android:minHeight="48dp" />
+                    </LinearLayout>
+
+                    <!-- Unit selection -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_straighten_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Unit icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Unit:"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:layout_marginStart="4dp" />
+
+                        <!-- Unit selection spinner -->
+                        <Spinner
+                            android:id="@+id/spinner_unit_mixed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:backgroundTint="@color/white"
+                            android:spinnerMode="dropdown"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Unit dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Livestock Section -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Livestock Information"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Livestock Type -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Livestock Type"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Livestock Type Spinner -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_pets_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Livestock icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <androidx.appcompat.widget.AppCompatSpinner
+                            android:id="@+id/spinner_livestock_type_mixed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Dropdown icon"
+                            app:tint="@color/ButtonGreen" />
+                    </LinearLayout>
+
+                    <!-- Other Livestock field (initially hidden) -->
+                    <LinearLayout
+                        android:id="@+id/layout_other_livestock_mixed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_pets_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Other livestock icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_other_livestock_mixed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="text"
+                            android:hint="Please specify other livestock"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <!-- Number of Animals -->
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Number of Animals"
+                        android:textColor="@android:color/black"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/edittxtbkg"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_tag_24"
+                            android:layout_marginStart="12dp"
+                            android:contentDescription="Number icon"
+                            app:tint="@color/ButtonGreen" />
+
+                        <EditText
+                            android:id="@+id/et_animal_count_mixed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:padding="12dp"
+                            android:inputType="number"
+                            android:hint="Enter number of animals"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:textColorHint="#757575"
+                            android:minHeight="48dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </ViewFlipper>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <!-- Save Button - positioned over the white background but still inside it -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_save"
         android:layout_width="match_parent"
@@ -591,14 +1177,17 @@
         android:text="Save"
         android:textAllCaps="false"
         android:textColor="@color/white"
+        android:textSize="16sp"
+        android:elevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Progress Bar -->
+    <!-- Loading Progress Bar -->
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:elevation="5dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

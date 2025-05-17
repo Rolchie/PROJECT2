@@ -1,9 +1,8 @@
-package com.maramagagriculturalaid.app;
+package com.maramagagriculturalaid.app.Login;
 
 import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 
 import android.text.TextUtils;
@@ -17,6 +16,9 @@ import android.widget.Toast;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.maramagagriculturalaid.app.MainActivity2;
+import com.maramagagriculturalaid.app.R;
 
 public class MunicipalLogin extends Fragment {
 
@@ -70,17 +72,38 @@ public class MunicipalLogin extends Fragment {
 
             mAuth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
-                        progressBar.setVisibility(View.GONE);
                         if (task.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Login Successful", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(requireContext(), MainActivity2.class);
-                            startActivity(intent);
-                            requireActivity().finish();
+                            String uid = mAuth.getCurrentUser().getUid();
+                            FirebaseFirestore.getInstance().collection("Users").document(uid)
+                                    .get()
+                                    .addOnSuccessListener(documentSnapshot -> {
+                                        progressBar.setVisibility(View.GONE);
+                                        if (documentSnapshot.exists()) {
+                                            String role = documentSnapshot.getString("Role");
+                                            if ("Municipal".equals(role)) {
+                                                Toast.makeText(requireContext(), "Login Successful", Toast.LENGTH_SHORT).show();
+                                                startActivity(new Intent(requireContext(), MainActivity2.class));
+                                                requireActivity().finish();
+                                            } else {
+                                                mAuth.signOut();
+                                                Toast.makeText(requireContext(), "Access denied: Not a Barangay account.", Toast.LENGTH_SHORT).show();
+                                            }
+                                        } else {
+                                            mAuth.signOut();
+                                            Toast.makeText(requireContext(), "User role not found.", Toast.LENGTH_SHORT).show();
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        progressBar.setVisibility(View.GONE);
+                                        mAuth.signOut();
+                                        Toast.makeText(requireContext(), "Failed to fetch user role.", Toast.LENGTH_SHORT).show();
+                                    });
                         } else {
+                            progressBar.setVisibility(View.GONE);
                             Toast.makeText(requireContext(), "Login Failed.", Toast.LENGTH_SHORT).show();
-
                         }
                     });
+
         }); return view;
     }
 }

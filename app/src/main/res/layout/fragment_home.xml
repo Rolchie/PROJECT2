@@ -1,432 +1,538 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/BackgroundGreen"
     android:fillViewport="true"
-    tools:context=".HomeFragment">
+    android:background="@color/BackgroundGreen">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingBottom="16dp">
+        android:layout_height="wrap_content">
 
-        <!-- Header Section -->
-        <LinearLayout
-            android:id="@+id/header_section"
-            android:layout_width="match_parent"
+        <!-- Profile Section -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/profileSection"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:padding="16dp"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/tv_greeting"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Good day,"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/tv_user_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Barangay Official"
-                android:textColor="@color/black"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_barangay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="\@barangay_dologon"
-                android:textColor="@color/black"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Dashboard Title -->
-        <TextView
-            android:id="@+id/tv_dashboard_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:text="Dashboard"
-            android:textColor="@color/black"
-            android:textSize="24sp"
-            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/header_section" />
+            app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Farmer's Data Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_farmers_data"
+            <TextView
+                android:id="@+id/greetingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins"
+                android:text="Good day,"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/titleText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/lato_black"
+                android:text="Barangay Official"
+                android:textColor="#000000"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/greetingText" />
+
+            <TextView
+                android:id="@+id/emailText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins"
+                android:text="BarangayEmail"
+                android:textColor="#555555"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/titleText" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Main Content -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/mainContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:background="@drawable/main_bg"
+            android:elevation="4dp"
+            android:paddingBottom="16dp"
+            app:layout_constraintTop_toBottomOf="@id/profileSection"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_dashboard_title">
+            app:layout_constraintEnd_toEndOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/dashboardTitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/lato_black"
+                android:text="Dashboard"
+                android:textColor="@color/black"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Farmer's Data Section -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/farmersDataSection"
+                android:layout_width="0dp"
+                android:layout_height="150dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/containerbkg"
+                android:elevation="4dp"
+                android:padding="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/dashboardTitle">
 
                 <TextView
-                    android:id="@+id/tv_farmers_data_title"
+                    android:id="@+id/farmersDataTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/lato_black"
                     android:text="Farmer's Data"
                     android:textColor="@color/black"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <ImageView
-                    android:id="@+id/iv_farm"
-                    android:src="@drawable/img_11"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:scaleType="centerCrop"
-
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:id="@+id/farmersDataImage"
+                    android:layout_width="120dp"
+                    android:layout_height="100dp"
+                    android:contentDescription="Farmers data illustration"
+                    android:src="@drawable/img_14"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tv_farmers_data_title" />
+                    app:layout_constraintTop_toBottomOf="@id/farmersDataTitle"
+                    app:layout_constraintVertical_bias="0.888" />
 
                 <LinearLayout
-                    android:id="@+id/ll_create_farmer"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    app:layout_constraintTop_toBottomOf="@id/iv_farm">
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp"
+                    app:layout_constraintStart_toEndOf="@id/farmersDataImage"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/farmersDataTitle"
+                    app:layout_constraintBottom_toBottomOf="parent">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_add_24" />
-
-                    <TextView
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/createFarmersData"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Create Farmer's Data"
+                        android:layout_marginBottom="12dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/baseline_add_24"
+                        android:drawablePadding="8dp"
+                        android:drawableTint="@color/black"
+                        android:focusable="true"
+                        android:padding="8dp"
+                        android:text="Add Farmer"
                         android:textColor="@color/black"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                        android:textSize="15sp"
+                        app:fontFamily="@font/poppins" />
 
-                <LinearLayout
-                    android:id="@+id/ll_edit_farmer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    app:layout_constraintTop_toBottomOf="@id/ll_create_farmer">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_edit_note_24" />
-
-                    <TextView
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/editFarmersData"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Edit Farmer's Data"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/baseline_edit_note_24"
+                        android:drawablePadding="8dp"
+                        android:drawableTint="@color/black"
+                        android:focusable="true"
+                        android:padding="8dp"
+                        android:text="Edit Farmer"
                         android:textColor="@color/black"
-                        android:textSize="16sp" />
+                        android:textSize="15sp"
+                        app:fontFamily="@font/poppins" />
                 </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
 
-        <!-- Subsidy Requests Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_subsidy_requests"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/card_farmers_data">
+            <!-- Subsidy Status Sections (without container) -->
+            <TextView
+                android:id="@+id/subsidyTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/lato_black"
+                android:text="Subsidy Request"
+                android:textColor="@color/black"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/farmersDataSection" />
+
+            <TextView
+                android:id="@+id/subsidyDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins"
+                android:text="View and Manage Subsidy requests"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/subsidyTitle" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/subsidyStatusContainer"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:layout_marginHorizontal="16dp"
+                android:weightSum="3"
+                app:layout_constraintTop_toBottomOf="@id/subsidyDescription"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Subsidy requests"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="View and manage requests from all barangays"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-
+                <!-- Pending Section -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:id="@+id/pendingSection"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
-
-                    <!-- Pending Requests -->
-                    <LinearLayout
-                        android:id="@+id/ll_pending_requests"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/baseline_pending_actions_24"
-                            app:tint="@color/Green" />
-
-                        <TextView
-                            android:id="@+id/tv_pending_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="Pending: 5"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <!-- Approved Requests -->
-                    <LinearLayout
-                        android:id="@+id/ll_approved_requests"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/baseline_check_circle_24"
-                            app:tint="@color/Green" />
-
-                        <TextView
-                            android:id="@+id/tv_approved_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="Approved: 3"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <!-- Rejected Requests -->
-                    <LinearLayout
-                        android:id="@+id/ll_rejected_requests"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/baseline_clear_24"
-                            app:tint="@color/red" />
-
-                        <TextView
-                            android:id="@+id/tv_rejected_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="Rejected: 3"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Recent Activity Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_recent_activity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/card_subsidy_requests">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recent Activity"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <!-- Activity Item 1 -->
-                <LinearLayout
-                    android:id="@+id/ll_activity_1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:backgroundTint="@color/LightGreen"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:background="#FFF9C4"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:orientation="vertical"
+                    android:gravity="center"
                     android:padding="12dp">
 
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/baseline_update_24"
-                        app:tint="@color/Green" />
+                        android:contentDescription="Pending icon"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pending"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/pendingCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="12"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Approved Section -->
+                <LinearLayout
+                    android:id="@+id/approvedSection"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="4dp"
+                    android:background="#C8E6C9"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_check_circle_24"
+                        android:contentDescription="Approved icon"
+                        app:tint="@color/ButtonGreen"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Approved"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/approvedCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="45"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Rejected Section -->
+                <LinearLayout
+                    android:id="@+id/rejectedSection"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="#FFCDD2"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_clear_24"
+                        android:contentDescription="Rejected icon"
+                        app:tint="@color/red"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Rejected"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/rejectedCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="8"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Recent Activity Section -->
+            <TextView
+                android:id="@+id/recentActivityTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/lato_black"
+                android:text="Recent Activity"
+                android:textColor="@color/black"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/subsidyStatusContainer" />
+
+            <!-- Activity Items Container -->
+            <LinearLayout
+                android:id="@+id/activityItemsContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:layout_marginHorizontal="16dp"
+                app:layout_constraintTop_toBottomOf="@id/recentActivityTitle"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <!-- Sample activity item 1 -->
+                <LinearLayout
+                    android:id="@+id/activityItem1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@android:color/white"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/baseline_edit_note_24"
+                        android:padding="4dp"
+                        app:tint="@color/black"
+                        android:contentDescription="Activity icon"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:orientation="vertical"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginStart="12dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Updated livestock information"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="2h"
-                        android:textColor="@color/dark_gray"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- Activity Item 2 -->
-                <LinearLayout
-                    android:id="@+id/ll_activity_2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:backgroundTint="@color/LightGreen"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_file_copy_24"
-                        app:tint="@color/Green" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                            android:textSize="14sp"
+                            android:textColor="#000000" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="New subsidy application submitted"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
+                            android:text="Farmer: Juan Dela Cruz"
+                            android:textSize="12sp"
+                            android:textColor="#555555"
+                            android:layout_marginTop="2dp" />
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1 day ago"
-                        android:textColor="@color/dark_gray"
-                        android:textSize="12sp" />
+                        android:text="2h ago"
+                        android:textSize="12sp"
+                        android:textColor="#555555" />
                 </LinearLayout>
 
-                <!-- Activity Item 3 -->
+                <!-- Sample activity item 2 -->
                 <LinearLayout
-                    android:id="@+id/ll_activity_3"
+                    android:id="@+id/activityItem2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:backgroundTint="@color/LightGreen"
-                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp"
+                    android:background="@android:color/white"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:padding="12dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_location_on_24"
-                        app:tint="@color/Green" />
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/baseline_check_circle_24"
+                        android:padding="4dp"
+                        app:tint="@color/ButtonGreen"
+                        android:contentDescription="Activity icon"/>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:orientation="vertical"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginStart="12dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Farm location modified"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
+                            android:text="Approved subsidy request"
+                            android:textSize="14sp"
+                            android:textColor="#000000" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Rice Subsidy Program - Maria Santos"
+                            android:textSize="12sp"
+                            android:textColor="#555555"
+                            android:layout_marginTop="2dp" />
                     </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3 days ago"
-                        android:textColor="@color/dark_gray"
-                        android:textSize="12sp" />
+                        android:text="5h ago"
+                        android:textSize="12sp"
+                        android:textColor="#555555" />
                 </LinearLayout>
+
+                <!-- Sample activity item 3 -->
+                <LinearLayout
+                    android:id="@+id/activityItem3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/white"
+                    android:elevation="2dp"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/baseline_add_24"
+                        android:padding="4dp"
+                        app:tint="@color/black"
+                        android:contentDescription="Activity icon"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="New farmer registered"
+                            android:textSize="14sp"
+                            android:textColor="#000000" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pedro Reyes - Rice Farmer"
+                            android:textSize="12sp"
+                            android:textColor="#555555"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Yesterday"
+                        android:textSize="12sp"
+                        android:textColor="#555555" />
+                </LinearLayout>
+
+                <!-- RecyclerView for dynamic activity items -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/activityRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    tools:listitem="@layout/item_activity"/>
+
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

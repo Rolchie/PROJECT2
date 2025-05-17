@@ -18,7 +18,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -30,9 +29,8 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.maramagagriculturalaid.app.FarmersData.FarmersDataFragment;
 import com.maramagagriculturalaid.app.databinding.ActivityMain2Binding;
 
 public class MainActivity2 extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -92,32 +90,46 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        // Initialize userId from current authenticated user
+        if (mAuth.getCurrentUser() != null) {
+            userId = mAuth.getCurrentUser().getUid();
+        } else {
+            // Handle case when user is not authenticated
+            Toast.makeText(this, "User not authenticated", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(MainActivity2.this, MainActivity.class));
+            finish();
+            return;
+        }
+
         View headerView = navigationView.getHeaderView(0);
         txtBarangayName = headerView.findViewById(R.id.BarangayName);
         txtEmail = headerView.findViewById(R.id.BarangayEmail);
         btnLogout = headerView.findViewById(R.id.logout);
 
+        DocumentReference docRef = db.collection("Users").document(userId);
+        docRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    String name = document.getString("Name");
+                    String email = document.getString("Email");
 
+                    if (name != null) {
+                        txtBarangayName.setText("Barangay" + " " + name);
+                    }
 
-//        DocumentReference docRef = db.collection("users").document(userId);
-//        docRef.get().addOnCompleteListener(task -> {
-//            if (task.isSuccessful()) {
-//                DocumentSnapshot document = task.getResult();
-//                if (document.exists()) {
-//                    String name = document.getString("Name");
-//                    String email = document.getString("Email");
-//
-//                    if (name != null) txtBarangayName.setText(name);
-//                    if (email != null) txtEmail.setText(email);
-//                } else {
-//                    Log.d("FirestoreDebug", "Document not found");
-//                    Toast.makeText(this, "User document not found", Toast.LENGTH_SHORT).show();
-//                }
-//            } else {
-//                Log.e("FirestoreDebug", "Fetch failed: ", task.getException());
-//                Toast.makeText(this, "Failed to load user info", Toast.LENGTH_SHORT).show();
-//            }
-//        });
+                    if (email != null) {
+                        txtEmail.setText(email);
+                    }
+                } else {
+                    Log.d("FirestoreDebug", "Document not found");
+                    Toast.makeText(this, "User document not found", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Log.e("FirestoreDebug", "Fetch failed: ", task.getException());
+                Toast.makeText(this, "Failed to load user info", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -135,17 +147,25 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
             replaceFragment(new AboutUsFragment());
             return true;
         } else if (itemId == R.id.logout) {
-            new android.app.AlertDialog.Builder(this)
-                    .setTitle("Confirm Logout")
-                    .setMessage("Are you sure you want to log out?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        mAuth.signOut();
-                        Toast.makeText(MainActivity2.this, "Logged out", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(MainActivity2.this, MainActivity.class));
-                        finish();
-                    })
-                    .setNegativeButton("No", null)
-                    .show();
+            Dialog dialog = new Dialog(this);
+            dialog.setContentView(R.layout.logout);
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.setCancelable(false);
+
+            Button btnYes = dialog.findViewById(R.id.btnYes);
+            Button btnNo = dialog.findViewById(R.id.btnNo);
+
+            btnYes.setOnClickListener(v -> {
+                dialog.dismiss();
+                mAuth.signOut();
+                Toast.makeText(MainActivity2.this, "Logged out", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(MainActivity2.this, MainActivity.class));
+                finish();
+            });
+
+            btnNo.setOnClickListener(v -> dialog.dismiss());
+
+            dialog.show();
             return true;
         }
 

@@ -33,10 +33,10 @@
             android:layout_gravity="bottom"
             android:backgroundTint="@color/white"
             app:fabAlignmentMode="center"
-            app:fabCradleMargin="15dp"
+            app:fabCradleMargin="10dp"
             app:fabAlignmentModeEndMargin="10dp"
             app:fabAnchorMode="cradle"
-            app:fabCradleRoundedCornerRadius="10dp"/>
+            app:fabCradleRoundedCornerRadius="15dp"/>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigation"
@@ -44,7 +44,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:background="@android:color/transparent"
-            app:labelVisibilityMode="labeled"
+            app:labelVisibilityMode="selected"
+            app:itemIconTint="@color/ButtonGreen"
+            app:itemTextColor="@color/black"
             app:menu="@menu/bottom_menu" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -68,6 +70,8 @@
         android:layout_height="match_parent"
         android:layout_gravity="end"
         android:background="@color/white"
+        app:itemTextColor="@color/black"
+        app:itemIconTint="@drawable/nav_item_color"
         app:headerLayout="@layout/nav_header"
         app:menu="@menu/nav_menu" />
 

@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:gravity="bottom"
     android:padding="16dp"
-    android:background="@color/Green"
+    android:background="@color/BackgroundGreen"
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <ImageView
@@ -21,7 +21,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="BarangayName"
-        android:textColor="@color/white"
+        android:textColor="@color/Green"
         android:textStyle="bold"
         android:textSize="16sp" />
 
@@ -31,7 +31,7 @@
         android:layout_height="wrap_content"
         android:text="BarangayEmail"
         android:layout_marginTop="4dp"
-        android:textColor="@color/white"
+        android:textColor="@color/Green"
         android:textSize="14sp" />
 
 </LinearLayout>
