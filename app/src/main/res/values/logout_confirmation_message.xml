@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="logout_confirmation_message">Are you sure you want to Log out?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+</resources>

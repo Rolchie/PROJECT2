@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="@color/BackgroundGreen">
+    android:background="@color/BackgroundGreen"
+    android:fillViewport="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -18,9 +17,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
                 android:id="@+id/greetingText"
@@ -68,9 +67,9 @@
             android:background="@drawable/main_bg"
             android:elevation="4dp"
             android:paddingBottom="16dp"
-            app:layout_constraintTop_toBottomOf="@id/profileSection"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/profileSection">
 
             <TextView
                 android:id="@+id/dashboardTitle"
@@ -127,12 +126,12 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_marginStart="16dp"
-                    app:layout_constraintStart_toEndOf="@id/farmersDataImage"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/farmersDataTitle"
-                    app:layout_constraintBottom_toBottomOf="parent">
+                    app:layout_constraintStart_toEndOf="@id/farmersDataImage"
+                    app:layout_constraintTop_toBottomOf="@id/farmersDataTitle">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/createFarmersData"
@@ -166,10 +165,12 @@
                         android:textColor="@color/black"
                         android:textSize="15sp"
                         app:fontFamily="@font/poppins" />
+
                 </LinearLayout>
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Subsidy Status Sections (without container) -->
+            <!-- Subsidy Status Title -->
             <TextView
                 android:id="@+id/subsidyTitle"
                 android:layout_width="wrap_content"
@@ -197,57 +198,60 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/subsidyTitle" />
 
+            <!-- Subsidy Status Container -->
             <LinearLayout
                 android:id="@+id/subsidyStatusContainer"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
                 android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
                 android:weightSum="3"
-                app:layout_constraintTop_toBottomOf="@id/subsidyDescription"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/subsidyDescription">
 
                 <!-- Pending Section -->
                 <LinearLayout
                     android:id="@+id/pendingSection"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
                     android:background="#FFF9C4"
                     android:clickable="true"
-                    android:focusable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
-                    android:orientation="vertical"
                     android:gravity="center"
+                    android:orientation="vertical"
                     android:padding="12dp">
 
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:contentDescription="Pending icon"
                         android:src="@drawable/baseline_update_24"
-                        android:contentDescription="Pending icon"/>
+                        app:tint="#FBC02D" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:text="Pending"
                         android:textColor="@color/black"
-                        android:textSize="14sp"
-                        android:layout_marginTop="4dp"/>
+                        android:textSize="14sp" />
 
                     <TextView
-                        android:id="@+id/pendingCount"
+                        android:id="@+id/tvpendingCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="12"
+                        android:layout_marginTop="4dp"
+                        android:text="0"
                         android:textColor="@color/black"
                         android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
+                        android:textStyle="bold" />
+
                 </LinearLayout>
 
                 <!-- Approved Section -->
@@ -255,41 +259,42 @@
                     android:id="@+id/approvedSection"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_marginHorizontal="4dp"
+                    android:layout_weight="1"
                     android:background="#C8E6C9"
                     android:clickable="true"
-                    android:focusable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
-                    android:orientation="vertical"
                     android:gravity="center"
+                    android:orientation="vertical"
                     android:padding="12dp">
 
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/baseline_check_circle_24"
                         android:contentDescription="Approved icon"
-                        app:tint="@color/ButtonGreen"/>
+                        android:src="@drawable/baseline_check_circle_24"
+                        app:tint="@color/ButtonGreen" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:text="Approved"
                         android:textColor="@color/black"
-                        android:textSize="14sp"
-                        android:layout_marginTop="4dp"/>
+                        android:textSize="14sp" />
 
                     <TextView
-                        android:id="@+id/approvedCount"
+                        android:id="@+id/tvapprovedCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="45"
+                        android:layout_marginTop="4dp"
+                        android:text="0"
                         android:textColor="@color/black"
                         android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
+                        android:textStyle="bold" />
+
                 </LinearLayout>
 
                 <!-- Rejected Section -->
@@ -297,42 +302,44 @@
                     android:id="@+id/rejectedSection"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_marginStart="8dp"
+                    android:layout_weight="1"
                     android:background="#FFCDD2"
                     android:clickable="true"
-                    android:focusable="true"
                     android:elevation="2dp"
+                    android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
-                    android:orientation="vertical"
                     android:gravity="center"
+                    android:orientation="vertical"
                     android:padding="12dp">
 
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/baseline_clear_24"
                         android:contentDescription="Rejected icon"
-                        app:tint="@color/red"/>
+                        android:src="@drawable/baseline_clear_24"
+                        app:tint="@color/red" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:text="Rejected"
                         android:textColor="@color/black"
-                        android:textSize="14sp"
-                        android:layout_marginTop="4dp"/>
+                        android:textSize="14sp" />
 
                     <TextView
-                        android:id="@+id/rejectedCount"
+                        android:id="@+id/tvrejectedCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="8"
+                        android:layout_marginTop="4dp"
+                        android:text="0"
                         android:textColor="@color/black"
                         android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
+                        android:textStyle="bold" />
+
                 </LinearLayout>
+
             </LinearLayout>
 
             <!-- Recent Activity Section -->
@@ -350,189 +357,21 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/subsidyStatusContainer" />
 
-            <!-- Activity Items Container -->
-            <LinearLayout
-                android:id="@+id/activityItemsContainer"
+            <!-- RecyclerView for recent activities -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/activityRecyclerView"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="8dp"
                 android:layout_marginHorizontal="16dp"
-                app:layout_constraintTop_toBottomOf="@id/recentActivityTitle"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
-
-                <!-- Sample activity item 1 -->
-                <LinearLayout
-                    android:id="@+id/activityItem1"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@android:color/white"
-                    android:elevation="2dp"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/baseline_edit_note_24"
-                        android:padding="4dp"
-                        app:tint="@color/black"
-                        android:contentDescription="Activity icon"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Updated livestock information"
-                            android:textSize="14sp"
-                            android:textColor="#000000" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Farmer: Juan Dela Cruz"
-                            android:textSize="12sp"
-                            android:textColor="#555555"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="2h ago"
-                        android:textSize="12sp"
-                        android:textColor="#555555" />
-                </LinearLayout>
-
-                <!-- Sample activity item 2 -->
-                <LinearLayout
-                    android:id="@+id/activityItem2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@android:color/white"
-                    android:elevation="2dp"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/baseline_check_circle_24"
-                        android:padding="4dp"
-                        app:tint="@color/ButtonGreen"
-                        android:contentDescription="Activity icon"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Approved subsidy request"
-                            android:textSize="14sp"
-                            android:textColor="#000000" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Rice Subsidy Program - Maria Santos"
-                            android:textSize="12sp"
-                            android:textColor="#555555"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5h ago"
-                        android:textSize="12sp"
-                        android:textColor="#555555" />
-                </LinearLayout>
-
-                <!-- Sample activity item 3 -->
-                <LinearLayout
-                    android:id="@+id/activityItem3"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@android:color/white"
-                    android:elevation="2dp"
-                    android:foreground="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/baseline_add_24"
-                        android:padding="4dp"
-                        app:tint="@color/black"
-                        android:contentDescription="Activity icon"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="New farmer registered"
-                            android:textSize="14sp"
-                            android:textColor="#000000" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Pedro Reyes - Rice Farmer"
-                            android:textSize="12sp"
-                            android:textColor="#555555"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Yesterday"
-                        android:textSize="12sp"
-                        android:textColor="#555555" />
-                </LinearLayout>
-
-                <!-- RecyclerView for dynamic activity items -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/activityRecyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    tools:listitem="@layout/item_activity"/>
-
-            </LinearLayout>
+                app:layout_constraintTop_toBottomOf="@id/recentActivityTitle"
+                tools:listitem="@layout/item_recent_activity" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.core.widget.NestedScrollView>

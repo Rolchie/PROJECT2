@@ -8,7 +8,7 @@
     android:background="@color/BackgroundGreen"
     tools:context=".FarmersData.FarmInfoActivity">
 
-    <!-- Back Button and Title directly on the green background -->
+    <!-- Header Section -->
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/btn_back"
         android:layout_width="48dp"
@@ -33,11 +33,10 @@
         app:fontFamily="@font/lato_black"
         app:layout_constraintBottom_toBottomOf="@id/btn_back"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@id/btn_back"
-        app:layout_constraintTop_toTopOf="@id/btn_back"
-        app:layout_constraintVertical_bias="0.571" />
+        app:layout_constraintTop_toTopOf="@id/btn_back" />
 
+    <!-- White Background Container -->
     <View
         android:id="@+id/white_background"
         android:layout_width="match_parent"
@@ -48,22 +47,23 @@
         app:layout_constraintTop_toBottomOf="@id/btn_back"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- All content inside the white background -->
+    <!-- Scrollable Content Area -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
         android:clipToPadding="false"
         android:scrollbarStyle="outsideOverlay"
-        android:paddingBottom="16dp"
         android:elevation="3dp"
         app:layout_constraintTop_toTopOf="@id/white_background"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toTopOf="@id/btn_save"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="80dp"> <!-- Extra padding for the Save button -->
+            android:paddingBottom="16dp">
 
             <!-- Process Indicator -->
             <LinearLayout
@@ -88,7 +88,6 @@
                         android:text="Step 2 of 3"
                         android:textColor="@android:color/black"
                         android:textSize="14sp" />
-
                 </LinearLayout>
 
                 <ProgressBar
@@ -138,7 +137,8 @@
                         android:gravity="center"
                         android:padding="12dp"
                         android:text="Crop"
-                        android:textColor="@drawable/radio_text_selector" />
+                        android:textColor="@drawable/radio_text_selector"
+                        tools:fontFamily="@font/poppins" />
 
                     <androidx.appcompat.widget.AppCompatRadioButton
                         android:id="@+id/rb_livestock"
@@ -168,7 +168,7 @@
                 </RadioGroup>
             </LinearLayout>
 
-            <!-- Form Content -->
+            <!-- ViewFlipper for Forms -->
             <ViewFlipper
                 android:id="@+id/view_flipper"
                 android:layout_width="match_parent"
@@ -186,36 +186,37 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
                         android:text="Location"
                         android:textColor="@android:color/black"
                         android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="12dp" />
+                        android:textStyle="bold" />
 
-                    <!-- Municipal (Now as TextView) -->
+                    <!-- Municipal -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="Municipal"
                         android:textColor="@android:color/black"
                         android:textSize="14sp"
-                        android:layout_marginBottom="4dp" />
+                        app:fontFamily="@font/poppins" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Location icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/baseline_location_on_24"
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatTextView
                             android:id="@+id/tv_municipal_crop"
@@ -231,27 +232,26 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="Barangay"
                         android:textColor="@android:color/black"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="14sp" />
 
-                    <!-- Barangay Spinner - Add dropdown icon -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Barangay icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/baseline_location_on_24"
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_barangay_crop"
@@ -265,9 +265,9 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
                             android:layout_marginEnd="12dp"
                             android:contentDescription="Dropdown icon"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
 
@@ -275,72 +275,73 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="Street Name, Building, House No."
                         android:textColor="@android:color/black"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="14sp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="16dp">
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_home_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Street icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/baseline_home_24"
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_street_crop"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:background="@null"
-                            android:padding="12dp"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
+                            android:hint="Purok 1"
                             android:inputType="text"
-                            android:hint="Purok 1" />
+                            android:padding="12dp" />
                     </LinearLayout>
 
-                    <!-- Crops Grown Section -->
+                    <!-- Crop Information Section -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
                         android:text="Crop Information"
                         android:textColor="@android:color/black"
                         android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="12dp" />
+                        android:textStyle="bold" />
 
                     <!-- Crops Grown -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="Crops Grown"
                         android:textColor="@android:color/black"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="14sp" />
 
-                    <!-- Crops Grown Spinner -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/img_15"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Crops icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/img_15"
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_crops_grown"
@@ -354,39 +355,41 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
                             android:layout_marginEnd="12dp"
                             android:contentDescription="Dropdown icon"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
 
-                    <!-- Other Crop field (initially hidden) -->
+                    <!-- Other Crop field -->
                     <LinearLayout
                         android:id="@+id/layout_other_crop"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal"
                         android:visibility="gone">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/img_15"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Other crop icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/img_15"
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_other_crop"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:background="@null"
-                            android:padding="12dp"
-                            android:inputType="text"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Please specify other crop"
+                            android:inputType="text"
+                            android:padding="12dp"
                             android:textSize="16sp" />
                     </LinearLayout>
 
@@ -394,88 +397,85 @@
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="Size of Lot"
                         android:textColor="@android:color/black"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="14sp" />
 
-                    <!-- Size input field -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp"
-                        android:minHeight="48dp">
+                        android:minHeight="48dp"
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_aspect_ratio_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Size icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/baseline_aspect_ratio_24"
+                            app:tint="@color/black" />
 
-                        <!-- Size input -->
                         <EditText
                             android:id="@+id/et_lot_size"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="2"
                             android:background="@null"
-                            android:padding="12dp"
-                            android:inputType="numberDecimal"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Enter size"
-                            android:textSize="16sp"
-                            android:textColor="@android:color/black"
-                            android:textColorHint="#757575"
-                            android:minHeight="48dp" />
+                            android:inputType="numberDecimal"
+                            android:minHeight="48dp"
+                            android:padding="12dp"
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Unit selection -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
                         android:background="@drawable/edittxtbkg"
                         android:gravity="center_vertical"
-                        android:minHeight="48dp">
+                        android:minHeight="48dp"
+                        android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_straighten_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Unit icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:src="@drawable/baseline_straighten_24"
+                            app:tint="@color/black" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
                             android:text="Unit:"
-                            android:textSize="16sp"
                             android:textColor="@android:color/black"
-                            android:layout_marginStart="4dp" />
+                            android:textSize="16sp" />
 
-                        <!-- Unit selection spinner -->
                         <Spinner
                             android:id="@+id/spinner_unit"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:backgroundTint="@color/white"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp"
-                            android:backgroundTint="@color/white"
                             android:spinnerMode="dropdown"
                             android:textSize="16sp" />
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
                             android:layout_marginEnd="12dp"
                             android:contentDescription="Unit dropdown icon"
+                            android:src="@drawable/baseline_arrow_drop_down_24"
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
                 </LinearLayout>
@@ -520,7 +520,7 @@
                             android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Location icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatTextView
                             android:id="@+id/tv_municipal_livestock"
@@ -555,7 +555,7 @@
                             android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Barangay icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_barangay_livestock"
@@ -598,7 +598,7 @@
                             android:src="@drawable/baseline_home_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Street icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_street_livestock"
@@ -606,6 +606,8 @@
                             android:layout_height="wrap_content"
                             android:background="@null"
                             android:padding="12dp"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:inputType="text"
                             android:hint="Purok 1" />
                     </LinearLayout>
@@ -644,7 +646,7 @@
                             android:src="@drawable/baseline_pets_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Livestock icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_livestock_type"
@@ -664,7 +666,7 @@
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
 
-                    <!-- Other Livestock field (initially hidden) -->
+                    <!-- Other Livestock field -->
                     <LinearLayout
                         android:id="@+id/layout_other_livestock"
                         android:layout_width="match_parent"
@@ -681,7 +683,7 @@
                             android:src="@drawable/baseline_pets_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Other livestock icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_other_livestock"
@@ -690,6 +692,8 @@
                             android:background="@null"
                             android:padding="12dp"
                             android:inputType="text"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Please specify other livestock"
                             android:textSize="16sp" />
                     </LinearLayout>
@@ -717,7 +721,7 @@
                             android:src="@drawable/baseline_tag_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Number icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_animal_count"
@@ -725,11 +729,11 @@
                             android:layout_height="wrap_content"
                             android:background="@null"
                             android:padding="12dp"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:inputType="number"
                             android:hint="Enter number of animals"
                             android:textSize="16sp"
-                            android:textColor="@android:color/black"
-                            android:textColorHint="#757575"
                             android:minHeight="48dp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -774,7 +778,7 @@
                             android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Location icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatTextView
                             android:id="@+id/tv_municipal_mixed"
@@ -809,7 +813,7 @@
                             android:src="@drawable/baseline_location_on_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Barangay icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_barangay_mixed"
@@ -852,7 +856,7 @@
                             android:src="@drawable/baseline_home_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Street icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_street_mixed"
@@ -860,6 +864,8 @@
                             android:layout_height="wrap_content"
                             android:background="@null"
                             android:padding="12dp"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:inputType="text"
                             android:hint="Purok 1" />
                     </LinearLayout>
@@ -898,7 +904,7 @@
                             android:src="@drawable/img_15"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Crops icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_crops_grown_mixed"
@@ -918,7 +924,7 @@
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
 
-                    <!-- Other Crop field (initially hidden) -->
+                    <!-- Other Crop field -->
                     <LinearLayout
                         android:id="@+id/layout_other_crop_mixed"
                         android:layout_width="match_parent"
@@ -935,7 +941,7 @@
                             android:src="@drawable/img_15"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Other crop icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_other_crop_mixed"
@@ -944,6 +950,8 @@
                             android:background="@null"
                             android:padding="12dp"
                             android:inputType="text"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Please specify other crop"
                             android:textSize="16sp" />
                     </LinearLayout>
@@ -973,9 +981,8 @@
                             android:src="@drawable/baseline_aspect_ratio_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Size icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
-                        <!-- Size input -->
                         <EditText
                             android:id="@+id/et_lot_size_mixed"
                             android:layout_width="0dp"
@@ -986,8 +993,8 @@
                             android:inputType="numberDecimal"
                             android:hint="Enter size"
                             android:textSize="16sp"
-                            android:textColor="@android:color/black"
-                            android:textColorHint="#757575"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:minHeight="48dp" />
                     </LinearLayout>
 
@@ -1007,7 +1014,7 @@
                             android:src="@drawable/baseline_straighten_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Unit icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -1017,7 +1024,6 @@
                             android:textColor="@android:color/black"
                             android:layout_marginStart="4dp" />
 
-                        <!-- Unit selection spinner -->
                         <Spinner
                             android:id="@+id/spinner_unit_mixed"
                             android:layout_width="0dp"
@@ -1072,7 +1078,7 @@
                             android:src="@drawable/baseline_pets_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Livestock icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <androidx.appcompat.widget.AppCompatSpinner
                             android:id="@+id/spinner_livestock_type_mixed"
@@ -1092,7 +1098,7 @@
                             app:tint="@color/ButtonGreen" />
                     </LinearLayout>
 
-                    <!-- Other Livestock field (initially hidden) -->
+                    <!-- Other Livestock field -->
                     <LinearLayout
                         android:id="@+id/layout_other_livestock_mixed"
                         android:layout_width="match_parent"
@@ -1109,7 +1115,7 @@
                             android:src="@drawable/baseline_pets_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Other livestock icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_other_livestock_mixed"
@@ -1118,6 +1124,8 @@
                             android:background="@null"
                             android:padding="12dp"
                             android:inputType="text"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Please specify other livestock"
                             android:textSize="16sp" />
                     </LinearLayout>
@@ -1145,7 +1153,7 @@
                             android:src="@drawable/baseline_tag_24"
                             android:layout_marginStart="12dp"
                             android:contentDescription="Number icon"
-                            app:tint="@color/ButtonGreen" />
+                            app:tint="@color/black" />
 
                         <EditText
                             android:id="@+id/et_animal_count_mixed"
@@ -1154,10 +1162,10 @@
                             android:background="@null"
                             android:padding="12dp"
                             android:inputType="number"
+                            android:textColorHint="@color/dark_gray"
+                            android:textColor="@color/black"
                             android:hint="Enter number of animals"
                             android:textSize="16sp"
-                            android:textColor="@android:color/black"
-                            android:textColorHint="#757575"
                             android:minHeight="48dp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -1165,32 +1173,47 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- Save Button - positioned over the white background but still inside it -->
+    <!-- Save Button (Fixed Position) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_save"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:background="@drawable/getstartedbkg"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/buttons"
         android:backgroundTint="@color/ButtonGreen"
         android:padding="14dp"
         android:text="Save"
+        android:fontFamily="@font/roboto_light"
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:textSize="16sp"
         android:elevation="4dp"
+        android:minHeight="48dp"
+        android:foreground="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Loading Progress Bar -->
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Progress Overlay -->
+    <FrameLayout
+        android:id="@+id/progress_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
         android:visibility="gone"
-        android:elevation="5dp"
+        android:elevation="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/white"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

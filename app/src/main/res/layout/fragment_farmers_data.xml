@@ -1,256 +1,315 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
+    android:paddingBottom="65dp"
     android:background="@color/BackgroundGreen">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Header directly on the background -->
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/lato_black"
+        android:text="Farmer's Data"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Curved White Background -->
+    <View
+        android:id="@+id/white_background"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/main_bg"
+        android:elevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_title"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- Farmer's Data Title Section in green background -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/titleSection"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:padding="16dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+    <!-- Main Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:scrollbarStyle="outsideOverlay"
+        android:paddingTop="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:elevation="3dp"
+        app:layout_constraintTop_toTopOf="@id/white_background"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-            <TextView
-                android:id="@+id/farmersDataTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="88dp"
-                android:layout_marginTop="8dp"
-                android:fontFamily="@font/lato_black"
-                android:gravity="center"
-                android:text="Farmer's Data"
-                android:textColor="#000000"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <!-- Main Content -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/mainContent"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/main_bg"
-            android:elevation="4dp"
-            android:paddingBottom="24dp"
-            app:layout_constraintTop_toBottomOf="@id/titleSection"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
 
             <!-- Search Farmer Section -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/searchFarmerSection"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/search_farmer_section"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/containerbkg"
-                android:elevation="4dp"
-                android:padding="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp">
 
+                <!-- Section Title with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_search_24"
+                        app:tint="#2E7D32"
+                        android:contentDescription="Search"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Search Farmer"
+                        android:textColor="#2E7D32"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="@font/lato_black"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+                <!-- Search Input -->
                 <TextView
-                    android:id="@+id/searchFarmerTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/lato_black"
-                    android:text="Search Farmer"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <androidx.appcompat.widget.AppCompatEditText
-                    android:id="@+id/editTextFarmerId"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:background="@drawable/edittxtbkg"
-                    android:fontFamily="@font/roboto_light"
-                    android:hint="Enter Farmer's ID (e.g 12345)"
-                    android:inputType="text"
-                    android:padding="12dp"
+                    android:text="Farmer's ID"
                     android:textColor="#000000"
                     android:textSize="16sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/searchFarmerTitle" />
+                    android:textStyle="bold"
+                    android:fontFamily="@font/lato_black"
+                    android:layout_marginBottom="8dp"/>
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:startIconDrawable="@drawable/baseline_person_24"
+                    app:startIconTint="#757575"
+                    app:boxStrokeColor="#2E7D32"
+                    app:hintEnabled="false"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextFarmerId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter Farmer ID (e.g 12345)"
+                        android:inputType="text"
+                        android:textColor="#000000"
+                        android:textColorHint="#757575"
+                        android:fontFamily="@font/roboto_light"
+                        android:padding="16dp"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Search Button -->
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="16dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:fontFamily="@font/roboto"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
                     android:text="Search"
                     android:textAllCaps="false"
-                    android:textColor="@color/white"
                     android:textSize="16sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/editTextFarmerId" />
+                    android:textColor="@color/white"
+                    android:fontFamily="@font/roboto"
+                    android:background="@drawable/buttons"
+                    android:drawableStart="@drawable/baseline_search_24"
+                    android:drawableTint="@color/white"
+                    android:drawablePadding="8dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp"/>
 
+                <!-- Progress Bar -->
                 <ProgressBar
                     android:id="@+id/progressBar"
                     style="?android:attr/progressBarStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_gravity="center"
                     android:visibility="gone"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/buttonSearch" />
+                    android:layout_marginBottom="16dp"/>
 
+                <!-- View All Farmers Button -->
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/buttonViewAllFarmers"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="16dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:fontFamily="@font/roboto"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
                     android:text="View All Farmers"
                     android:textAllCaps="false"
-                    android:textColor="@color/white"
                     android:textSize="16sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/progressBar" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- Create Farmer Data Section -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/createFarmerSection"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/containerbkg"
-                android:elevation="4dp"
-                android:padding="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/searchFarmerSection">
-
-                <TextView
-                    android:id="@+id/createFarmerTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/lato_black"
-                    android:text="Create Farmer Data"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <ImageView
-                    android:id="@+id/createFarmerImage"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:layout_marginTop="16dp"
-                    android:src="@drawable/baseline_add_24"
-                    android:background="#E8F5E9"
-                    android:padding="16dp"
-                    app:tint="@color/ButtonGreen"
-                    android:contentDescription="Add farmer icon"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/createFarmerTitle" />
-
-                <TextView
-                    android:id="@+id/createFarmerDescription"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:fontFamily="@font/poppins"
-                    android:text="Add a new farmer to the database with complete information"
-                    android:textColor="#555555"
-                    android:textSize="14sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/createFarmerImage"
-                    app:layout_constraintTop_toTopOf="@id/createFarmerImage" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/buttonAddFarmer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/getstartedbkg"
-                    android:drawableStart="@drawable/baseline_add_24"
-                    android:drawablePadding="8dp"
-                    android:fontFamily="@font/roboto"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Add Farmer"
-                    android:textAllCaps="false"
                     android:textColor="@color/white"
-                    android:textSize="14sp"
-                    app:layout_constraintStart_toEndOf="@id/createFarmerImage"
-                    app:layout_constraintStart_toStartOf="@id/createFarmerDescription"
-                    app:layout_constraintTop_toBottomOf="@id/createFarmerDescription" />
+                    android:fontFamily="@font/roboto"
+                    android:background="@drawable/buttons"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:gravity="center"/>
+            </LinearLayout>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Create Farmer Section -->
+            <LinearLayout
+                android:id="@+id/create_farmer_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp">
+
+                <!-- Section Title with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_add_24"
+                        app:tint="#2E7D32"
+                        android:contentDescription="Add"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Create Farmer Data"
+                        android:textColor="#2E7D32"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="@font/lato_black"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+                <!-- Create Farmer Content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:id="@+id/createFarmerImage"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/img_18"
+                        android:background="#E8F5E9"
+                        android:padding="16dp"
+                        app:tint="@color/ButtonGreen"
+                        android:contentDescription="Add farmer icon"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:id="@+id/createFarmerDescription"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/poppins"
+                            android:text="Add a new farmer to the database with complete information"
+                            android:textColor="#555555"
+                            android:textSize="14sp"
+                            android:layout_marginBottom="8dp"/>
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/buttonAddFarmer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:background="@drawable/buttons"
+                            android:drawableStart="@drawable/baseline_add_24"
+                            android:drawablePadding="8dp"
+                            android:fontFamily="@font/roboto"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:text="Add Farmer"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginBottom="24dp"/>
 
             <!-- Tips Section -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/tipsSection"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/tips_section"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/containerbkg"
-                android:elevation="4dp"
-                android:padding="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/createFarmerSection">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tipsTitle"
-                    android:layout_width="wrap_content"
+                <!-- Section Title with Icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/lato_black"
-                    android:text="Tips"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_lightbulb_24"
+                        app:tint="#2E7D32"
+                        android:contentDescription="Tips"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tips"
+                        android:textColor="#2E7D32"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="@font/lato_black"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+                <!-- Tips Content -->
                 <TextView
                     android:id="@+id/tipsList"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:fontFamily="@font/poppins"
                     android:lineSpacingExtra="8dp"
                     android:text="• Use the search function to quickly find a specific farmer\n• View all farmers to see a complete list\n• Make sure to fill in all required fields when adding a new farmer\n• Keep farmer information up to date"
                     android:textColor="#555555"
-                    android:textSize="14sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tipsTitle" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.core.widget.NestedScrollView>
+                    android:textSize="14sp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

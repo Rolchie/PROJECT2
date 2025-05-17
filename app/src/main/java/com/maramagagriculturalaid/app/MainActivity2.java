@@ -31,6 +31,10 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.maramagagriculturalaid.app.FarmersData.FarmersDataFragment;
+import com.maramagagriculturalaid.app.Login.SessionsManager;
+import com.maramagagriculturalaid.app.Municipal.MunicipalActivity;
+import com.maramagagriculturalaid.app.Notification.NotificationsFragment;
+import com.maramagagriculturalaid.app.SubsidyManagement.SubsidyRequest;
 import com.maramagagriculturalaid.app.databinding.ActivityMain2Binding;
 
 public class MainActivity2 extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -82,8 +86,16 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
             return false;
         });
 
-        initBottomDrawerDialog();
-        binding.fab.setOnClickListener(v -> toggleBottomDrawer());
+        // Remove the bottom drawer initialization since we don't need it anymore
+        // initBottomDrawerDialog();
+
+        // Change the FAB click listener to navigate directly to SubsidyRequest
+        binding.fab.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity2.this, SubsidyRequest.class);
+            // You can pass a default type or leave it empty if not needed
+            intent.putExtra("type", "Seeds and Fertilizers"); // Default type
+            startActivity(intent);
+        });
 
         replaceFragment(new HomeFragment());
 
@@ -111,7 +123,7 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
                 if (document.exists()) {
-                    String name = document.getString("Name");
+                    String name = document.getString("Barangay");
                     String email = document.getString("Email");
 
                     if (name != null) {
@@ -140,12 +152,6 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         if (itemId == R.id.nav_home) {
             replaceFragment(new HomeFragment());
             return true;
-        } else if (itemId == R.id.nav_settings) {
-            replaceFragment(new SettingsFragment());
-            return true;
-        } else if (itemId == R.id.nav_about) {
-            replaceFragment(new AboutUsFragment());
-            return true;
         } else if (itemId == R.id.logout) {
             Dialog dialog = new Dialog(this);
             dialog.setContentView(R.layout.logout);
@@ -172,54 +178,14 @@ public class MainActivity2 extends AppCompatActivity implements NavigationView.O
         return false;
     }
 
-    private void replaceFragment(Fragment fragment) {
+    void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.frameLayout, fragment);
         transaction.commit();
     }
 
-    private void toggleBottomDrawer() {
-        if (bottomDrawerDialog != null && bottomDrawerDialog.isShowing()) {
-            bottomDrawerDialog.dismiss();
-        } else {
-            bottomDrawerDialog.show();
-        }
-    }
-
-    private void initBottomDrawerDialog() {
-        bottomDrawerDialog = new Dialog(this);
-        bottomDrawerDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        bottomDrawerDialog.setContentView(R.layout.bottom_sheet_layout);
-
-        LinearLayout seeds = bottomDrawerDialog.findViewById(R.id.SeedsFertilizers);
-        LinearLayout livestock = bottomDrawerDialog.findViewById(R.id.LivestockSupport);
-        LinearLayout money = bottomDrawerDialog.findViewById(R.id.MonetarySupport);
-        ImageView cancelButton = bottomDrawerDialog.findViewById(R.id.cancelButton);
-
-        seeds.setOnClickListener(v -> {
-            bottomDrawerDialog.dismiss();
-            Toast.makeText(MainActivity2.this, "Seeds and Fertilizers clicked", Toast.LENGTH_SHORT).show();
-        });
-
-        livestock.setOnClickListener(v -> {
-            bottomDrawerDialog.dismiss();
-            Toast.makeText(MainActivity2.this, "Livestock Support clicked", Toast.LENGTH_SHORT).show();
-        });
-
-        money.setOnClickListener(v -> {
-            bottomDrawerDialog.dismiss();
-            Toast.makeText(MainActivity2.this, "Monetary Support clicked", Toast.LENGTH_SHORT).show();
-        });
-
-        cancelButton.setOnClickListener(v -> bottomDrawerDialog.dismiss());
-
-        if (bottomDrawerDialog.getWindow() != null) {
-            bottomDrawerDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            bottomDrawerDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            bottomDrawerDialog.getWindow().setWindowAnimations(R.style.BottomDialogAnimation);
-            bottomDrawerDialog.getWindow().setGravity(Gravity.BOTTOM);
-        }
-    }
-
+    // Remove the bottom drawer related methods since they're no longer needed
+    // private void toggleBottomDrawer() {...}
+    // private void initBottomDrawerDialog() {...}
 }

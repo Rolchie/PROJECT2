@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="200dp"
+    android:orientation="vertical"
+    android:gravity="bottom"
+    android:padding="16dp"
+    android:background="@color/BackgroundGreen"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark">
+
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="start"
+        android:layout_marginBottom="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/logo" />
+
+    <TextView
+        android:id="@+id/MunicipalName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Municipal Name"
+        android:textColor="@color/Green"
+        android:textStyle="bold"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/MunicipalEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Municipal Email"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/Green"
+        android:textSize="14sp" />
+
+</LinearLayout>

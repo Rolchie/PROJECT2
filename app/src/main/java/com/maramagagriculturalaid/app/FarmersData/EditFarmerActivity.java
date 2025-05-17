@@ -1,191 +1,325 @@
 package com.maramagagriculturalaid.app.FarmersData;
 
 import android.content.Intent;
-import android.app.DatePickerDialog;
 import android.os.Bundle;
-import android.text.InputFilter;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.Button;
-import android.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.maramagagriculturalaid.app.R;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 public class EditFarmerActivity extends AppCompatActivity {
 
-    private TextView tvFarmerId;
-    private EditText etPhone, etFirstName, etLastName, etMiddleInitial;
-    private TextView tvBirthday;
+    private static final String TAG = "EditFarmerActivity";
+
+    // UI Components
     private ImageButton btnBack;
-    private Button btnSave, btnDelete;
-    private View progressBar;
+    private TextView tvTitle, tvBirthday, tvFarmerId;
+    private EditText etFirstName, etMiddleName, etLastName, etContactNumber;
+    private AppCompatButton btnNext;
+    private View progressOverlay;
 
-    private Calendar calendar;
-    private SimpleDateFormat dateFormatter;
+    // Data
     private FirebaseFirestore db;
-
-    // Variables to store original farmer data
-    private String originalFarmerId;
-    private String originalBarangay;
-    private String originalDocumentId;
+    private String farmerId, farmerName, barangay, farmerDocumentId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit_farmer); // Make sure to create this layout
+        setContentView(R.layout.activity_edit_farmer);
 
         db = FirebaseFirestore.getInstance();
-        calendar = Calendar.getInstance();
-        dateFormatter = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
+
+        // Get data from intent
+        farmerId = getIntent().getStringExtra("farmerId");
+        farmerName = getIntent().getStringExtra("farmerName");
+        barangay = getIntent().getStringExtra("barangay");
+        farmerDocumentId = getIntent().getStringExtra("farmerDocumentId");
+
+        // Debug logging
+        Log.d(TAG, "Received data - farmerId: " + farmerId + ", farmerName: " + farmerName +
+                ", barangay: " + barangay + ", farmerDocumentId: " + farmerDocumentId);
 
         initViews();
         setupClickListeners();
-
-        // Get farmer data from intent
-        Intent intent = getIntent();
-        if (intent != null) {
-            originalFarmerId = intent.getStringExtra("farmerId");
-            originalBarangay = intent.getStringExtra("barangay");
-            originalDocumentId = intent.getStringExtra("documentId");
-
-            if (originalFarmerId != null && originalBarangay != null && originalDocumentId != null) {
-                loadFarmerData();
-            } else {
-                Toast.makeText(this, "Error: Missing farmer information", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        }
+        loadFarmerData();
     }
 
     private void initViews() {
-        tvFarmerId = findViewById(R.id.tv_farmer_id);
-        etPhone = findViewById(R.id.et_phone);
-        etFirstName = findViewById(R.id.et_first_name);
-        etLastName = findViewById(R.id.et_last_name);
-        etMiddleInitial = findViewById(R.id.et_middle_initial);
-        tvBirthday = findViewById(R.id.tv_birthday);
         btnBack = findViewById(R.id.btn_back);
-        btnSave = findViewById(R.id.btn_save);
-        btnDelete = findViewById(R.id.btn_delete);
-        progressBar = findViewById(R.id.progress_bar);
+        tvTitle = findViewById(R.id.tv_title);
+        tvFarmerId = findViewById(R.id.tv_farmer_id); // Add this TextView for farmer ID
+        etFirstName = findViewById(R.id.et_first_name);
+        etMiddleName = findViewById(R.id.et_middle_initial);
+        etLastName = findViewById(R.id.et_last_name);
+        tvBirthday = findViewById(R.id.tv_birthday);
+        etContactNumber = findViewById(R.id.et_phone);
+        btnNext = findViewById(R.id.btn_next);
+        progressOverlay = findViewById(R.id.progress_overlay);
 
-        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        // Set title
+        if (tvTitle != null) {
+            tvTitle.setText("Edit Farmer Information");
+        }
+
+        // Set hints for EditText fields to make them visible
+        if (etFirstName != null) {
+            etFirstName.setHint("Enter first name");
+        }
+
+        if (etMiddleName != null) {
+            etMiddleName.setHint("Enter middle initial");
+        }
+
+        if (etLastName != null) {
+            etLastName.setHint("Enter last name");
+        }
+
+        if (etContactNumber != null) {
+            etContactNumber.setHint("Enter contact number (e.g., 09123456789)");
+        }
+
+        // Hide progress overlay initially
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(View.GONE);
+        }
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> onBackPressed());
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> onBackPressed());
+        } else {
+            Log.e(TAG, "btnBack is null - check if R.id.btn_back exists in layout");
+        }
 
-        btnSave.setOnClickListener(v -> {
-            if (validateForm()) {
-                updateFarmerInfo();
-            }
-        });
-
-        btnDelete.setOnClickListener(v -> {
-            showDeleteConfirmationDialog();
-        });
-
-        tvBirthday.setOnClickListener(v -> showDatePickerDialog());
+        if (btnNext != null) {
+            btnNext.setOnClickListener(v -> {
+                if (validateForm()) {
+                    proceedToFarmInformation();
+                }
+            });
+        } else {
+            Log.e(TAG, "btnNext is null - check if R.id.btn_next exists in layout");
+            Toast.makeText(this, "UI initialization error", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadFarmerData() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+        if (barangay == null) {
+            Toast.makeText(this, "Missing barangay information", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-        db.collection("Barangays")
-                .document(originalBarangay)
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(View.VISIBLE);
+        }
+
+        // Try multiple approaches to find the farmer
+        if (farmerDocumentId != null && !farmerDocumentId.isEmpty()) {
+            // First try: Use the provided document ID
+            loadFarmerByDocumentId(farmerDocumentId);
+        } else if (farmerId != null && !farmerId.isEmpty()) {
+            // Second try: Search by farmer ID
+            loadFarmerByFarmerId(farmerId);
+        } else if (farmerName != null && !farmerName.isEmpty()) {
+            // Third try: Use farmer name as document ID
+            loadFarmerByDocumentId(farmerName);
+        } else {
+            if (progressOverlay != null) {
+                progressOverlay.setVisibility(View.GONE);
+            }
+            Toast.makeText(this, "Missing farmer information", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void loadFarmerByDocumentId(String documentId) {
+        Log.d(TAG, "Trying to load farmer by document ID: " + documentId);
+
+        DocumentReference farmerRef = db.collection("Barangays")
+                .document(barangay)
                 .collection("Farmers")
-                .document(originalDocumentId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                .document(documentId);
 
-                    if (documentSnapshot.exists()) {
-                        // Set the data to the views
-                        tvFarmerId.setText(documentSnapshot.getString("farmerId"));
-                        etPhone.setText(documentSnapshot.getString("phoneNumber"));
-                        etFirstName.setText(documentSnapshot.getString("firstName"));
-                        etLastName.setText(documentSnapshot.getString("lastName"));
-                        etMiddleInitial.setText(documentSnapshot.getString("middleInitial"));
-                        tvBirthday.setText(documentSnapshot.getString("birthday"));
-
-                        // Set the calendar to the birthday date
-                        try {
-                            if (documentSnapshot.getString("birthday") != null) {
-                                calendar.setTime(dateFormatter.parse(documentSnapshot.getString("birthday")));
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+        farmerRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    Log.d(TAG, "Farmer found by document ID: " + documentId);
+                    Log.d(TAG, "Document data: " + document.getData()); // Debug log to see all fields
+                    if (progressOverlay != null) {
+                        progressOverlay.setVisibility(View.GONE);
+                    }
+                    farmerDocumentId = documentId; // Store the working document ID
+                    populateFormWithData(document);
+                } else {
+                    Log.d(TAG, "Farmer not found by document ID: " + documentId);
+                    // If document ID didn't work, try searching by farmer ID
+                    if (farmerId != null && !farmerId.isEmpty()) {
+                        loadFarmerByFarmerId(farmerId);
                     } else {
+                        if (progressOverlay != null) {
+                            progressOverlay.setVisibility(View.GONE);
+                        }
                         Toast.makeText(this, "Farmer data not found", Toast.LENGTH_SHORT).show();
                         finish();
                     }
+                }
+            } else {
+                Log.e(TAG, "Error loading farmer by document ID", task.getException());
+                // Try alternative method
+                if (farmerId != null && !farmerId.isEmpty()) {
+                    loadFarmerByFarmerId(farmerId);
+                } else {
+                    if (progressOverlay != null) {
+                        progressOverlay.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(this, "Error loading farmer data", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        });
+    }
+
+    private void loadFarmerByFarmerId(String searchFarmerId) {
+        Log.d(TAG, "Trying to load farmer by farmer ID: " + searchFarmerId);
+
+        db.collection("Barangays")
+                .document(barangay)
+                .collection("Farmers")
+                .whereEqualTo("farmerId", searchFarmerId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot document : task.getResult()) {
+                            Log.d(TAG, "Farmer found by farmer ID: " + searchFarmerId + ", Document ID: " + document.getId());
+                            Log.d(TAG, "Document data: " + document.getData()); // Debug log
+                            if (progressOverlay != null) {
+                                progressOverlay.setVisibility(View.GONE);
+                            }
+                            farmerDocumentId = document.getId(); // Store the actual document ID
+                            populateFormWithData(document);
+                            return;
+                        }
+                    }
+
+                    // If we reach here, farmer was not found
+                    Log.d(TAG, "Farmer not found by farmer ID: " + searchFarmerId);
+                    if (progressOverlay != null) {
+                        progressOverlay.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(this, "Farmer data not found in " + barangay, Toast.LENGTH_LONG).show();
+                    finish();
                 })
                 .addOnFailureListener(e -> {
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Error loading farmer data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error searching farmer by ID", e);
+                    if (progressOverlay != null) {
+                        progressOverlay.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(this, "Error loading farmer data", Toast.LENGTH_SHORT).show();
                     finish();
                 });
     }
 
-    private void showDatePickerDialog() {
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                this,
-                (view, year, month, dayOfMonth) -> {
-                    calendar.set(Calendar.YEAR, year);
-                    calendar.set(Calendar.MONTH, month);
-                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                    tvBirthday.setText(dateFormatter.format(calendar.getTime()));
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
+    private void populateFormWithData(DocumentSnapshot document) {
+        try {
+            // Get farmer ID and display it
+            String farmerIdFromDb = document.getString("farmerId");
+            String firstName = document.getString("firstName");
+            String middleInitial = document.getString("middleInitial"); // Note: using middleInitial, not middleName
+            String lastName = document.getString("lastName");
+            String birthday = document.getString("birthday");
 
-        Calendar minAgeCalendar = Calendar.getInstance();
-        minAgeCalendar.add(Calendar.YEAR, -15);
-        datePickerDialog.getDatePicker().setMaxDate(minAgeCalendar.getTimeInMillis());
-        datePickerDialog.getDatePicker().setMinDate(0); // Optional: prevent selecting before 1970
+            // Try different possible field names for phone/contact
+            String contactNumber = document.getString("contactNumber");
+            if (contactNumber == null) {
+                contactNumber = document.getString("phoneNumber");
+            }
+            if (contactNumber == null) {
+                contactNumber = document.getString("phone");
+            }
+            if (contactNumber == null) {
+                contactNumber = document.getString("mobile");
+            }
 
-        datePickerDialog.show();
+            Log.d(TAG, "Retrieved data - farmerId: " + farmerIdFromDb +
+                    ", firstName: " + firstName +
+                    ", lastName: " + lastName +
+                    ", middleInitial: " + middleInitial +
+                    ", birthday: " + birthday +
+                    ", contactNumber: " + contactNumber);
+
+            // Populate the farmer ID
+            if (farmerIdFromDb != null && tvFarmerId != null) {
+                tvFarmerId.setText(farmerIdFromDb);
+                farmerId = farmerIdFromDb; // Update the farmerId variable
+            }
+
+            // Populate the form fields
+            if (firstName != null && etFirstName != null) {
+                etFirstName.setText(firstName);
+            }
+
+            if (middleInitial != null && etMiddleName != null) {
+                etMiddleName.setText(middleInitial);
+            }
+
+            if (lastName != null && etLastName != null) {
+                etLastName.setText(lastName);
+            }
+
+            if (contactNumber != null && etContactNumber != null) {
+                etContactNumber.setText(contactNumber);
+            } else {
+                Log.w(TAG, "Contact number not found in database");
+            }
+
+            if (birthday != null && tvBirthday != null) {
+                tvBirthday.setText(birthday);
+            }
+
+            Log.d(TAG, "Form populated with farmer data");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error populating form data", e);
+            Toast.makeText(this, "Error loading form data", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private boolean validateForm() {
         boolean isValid = true;
 
-        if (TextUtils.isEmpty(etFirstName.getText())) {
+        // Validate first name
+        if (etFirstName != null && TextUtils.isEmpty(etFirstName.getText())) {
             etFirstName.setError("First name is required");
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(etLastName.getText())) {
+        // Validate last name
+        if (etLastName != null && TextUtils.isEmpty(etLastName.getText())) {
             etLastName.setError("Last name is required");
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(tvBirthday.getText())) {
-            Toast.makeText(this, "Please select a birthday", Toast.LENGTH_SHORT).show();
+        // Validate contact number
+        if (etContactNumber != null && TextUtils.isEmpty(etContactNumber.getText())) {
+            etContactNumber.setError("Contact number is required");
             isValid = false;
-        } else {
-            Calendar minAgeCalendar = Calendar.getInstance();
-            minAgeCalendar.add(Calendar.YEAR, -15);
-            if (calendar.after(minAgeCalendar)) {
-                Toast.makeText(this, "Must be at least 15 years old", Toast.LENGTH_SHORT).show();
+        } else if (etContactNumber != null) {
+            String contact = etContactNumber.getText().toString();
+            if (contact.length() < 10) {
+                etContactNumber.setError("Contact number must be at least 10 digits");
                 isValid = false;
             }
         }
@@ -193,207 +327,59 @@ public class EditFarmerActivity extends AppCompatActivity {
         return isValid;
     }
 
-    private void updateFarmerInfo() {
-        String lastName = etLastName.getText().toString().trim();
-        String firstName = etFirstName.getText().toString().trim();
-        String middleInitial = etMiddleInitial.getText().toString().trim();
-        String phoneNumber = etPhone.getText().toString().trim();
-        String birthday = tvBirthday.getText().toString().trim();
+    private void proceedToFarmInformation() {
+        // Create the updated farmer name
+        String firstName = etFirstName != null ? etFirstName.getText().toString().trim() : "";
+        String middleName = etMiddleName != null ? etMiddleName.getText().toString().trim() : "";
+        String lastName = etLastName != null ? etLastName.getText().toString().trim() : "";
 
-        // Format the document ID as shown in the screenshot: "Sanchez, Rolch Vincent T."
-        String newFarmerDocId = lastName + ", " + firstName;
-        if (!TextUtils.isEmpty(middleInitial)) {
-            newFarmerDocId += " " + middleInitial + ".";
-        }
-
-        // Show loading indicator
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
-        btnSave.setEnabled(false);
-
-        // Check if the new name is different and already exists (only if name changed)
-        if (!newFarmerDocId.equals(originalDocumentId)) {
-            String finalNewFarmerDocId = newFarmerDocId;
-            checkNameExists(newFarmerDocId, () -> {
-                // Name doesn't exist, proceed with update
-                performUpdate(finalNewFarmerDocId, lastName, firstName, middleInitial, phoneNumber, birthday);
-            });
+        String updatedFarmerName;
+        if (!middleName.isEmpty()) {
+            updatedFarmerName = lastName + ", " + firstName + " " + middleName.charAt(0) + ".";
         } else {
-            // Name hasn't changed, just update the existing document
-            performUpdate(originalDocumentId, lastName, firstName, middleInitial, phoneNumber, birthday);
+            updatedFarmerName = lastName + ", " + firstName;
+        }
+
+        // Pass all the data to EditFarmInformationActivity
+        Intent intent = new Intent(this, EditFarmInformationActivity.class);
+
+        // Pass original identifiers
+        intent.putExtra("farmerId", farmerId);
+        intent.putExtra("farmerName", updatedFarmerName);
+        intent.putExtra("barangay", barangay);
+        intent.putExtra("farmerDocumentId", farmerDocumentId);
+
+        // Pass the updated basic information
+        intent.putExtra("firstName", firstName);
+        intent.putExtra("middleName", middleName);
+        intent.putExtra("lastName", lastName);
+
+        String contactNumber = etContactNumber != null ? etContactNumber.getText().toString().trim() : "";
+        intent.putExtra("contactNumber", contactNumber);
+
+        Log.d(TAG, "Proceeding to EditFarmInformationActivity with updated data");
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 100) {
+            if (resultCode == RESULT_OK) {
+                // Farm information was saved successfully
+                // Return to the previous activity with success result
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("updated", true);
+                setResult(RESULT_OK, resultIntent);
+                finish();
+            }
+            // If RESULT_CANCELED, user came back without saving, so stay in this activity
         }
     }
 
-    private void checkNameExists(String newDocId, Runnable onNameAvailable) {
-        String[] barangays = {"Anahawon", "Base Camp", "Bayabason", "Bagongsilang", "Camp 1", "Colambugon", "Dagumba-an","Danggawan", "Dologon", "Kisanday", "Kuya", "La Roxas", "Panadtalan", "Panalsalan", "North Poblacion", "South Poblacion", "San Miguel", "San Roque", "Tubigon", "Kiharong"};
-
-        final int[] nameChecksCompleted = {0};
-        final boolean[] farmerNameExists = {false};
-
-        for (String barangay : barangays) {
-            db.collection("Barangays")
-                    .document(barangay)
-                    .collection("Farmers")
-                    .document(newDocId)
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        nameChecksCompleted[0]++;
-
-                        if (task.isSuccessful() && task.getResult().exists()) {
-                            farmerNameExists[0] = true;
-                        }
-
-                        if (nameChecksCompleted[0] == barangays.length) {
-                            if (progressBar != null && nameChecksCompleted[0] == barangays.length) {
-                                if (farmerNameExists[0]) {
-                                    progressBar.setVisibility(View.GONE);
-                                    btnSave.setEnabled(true);
-                                    Toast.makeText(EditFarmerActivity.this,
-                                            "A farmer with this name already exists", Toast.LENGTH_LONG).show();
-                                } else {
-                                    // Name is available, proceed with update
-                                    onNameAvailable.run();
-                                }
-                            }
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        nameChecksCompleted[0]++;
-
-                        if (nameChecksCompleted[0] == barangays.length) {
-                            if (!farmerNameExists[0]) {
-                                // Name is available, proceed with update
-                                onNameAvailable.run();
-                            } else {
-                                progressBar.setVisibility(View.GONE);
-                                btnSave.setEnabled(true);
-                            }
-                        }
-                    });
-        }
-    }
-
-    private void performUpdate(String documentId, String lastName, String firstName, String middleInitial,
-                               String phoneNumber, String birthday) {
-        // Create updated farmer data
-        Map<String, Object> farmerData = new HashMap<>();
-        farmerData.put("farmerId", originalFarmerId); // Keep the original ID
-        farmerData.put("firstName", firstName);
-        farmerData.put("lastName", lastName);
-        farmerData.put("middleInitial", middleInitial);
-        farmerData.put("phoneNumber", phoneNumber);
-        farmerData.put("birthday", birthday);
-
-        DocumentReference originalDocRef = db.collection("Barangays")
-                .document(originalBarangay)
-                .collection("Farmers")
-                .document(originalDocumentId);
-
-        DocumentReference newDocRef = db.collection("Barangays")
-                .document(originalBarangay)
-                .collection("Farmers")
-                .document(documentId);
-
-        // If document ID hasn't changed, just update the existing document
-        if (documentId.equals(originalDocumentId)) {
-            originalDocRef.update(farmerData)
-                    .addOnSuccessListener(aVoid -> {
-                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                        btnSave.setEnabled(true);
-                        Toast.makeText(EditFarmerActivity.this, "Farmer information updated successfully", Toast.LENGTH_SHORT).show();
-                        finish();
-                    })
-                    .addOnFailureListener(e -> {
-                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                        btnSave.setEnabled(true);
-                        Toast.makeText(EditFarmerActivity.this, "Error updating farmer: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        } else {
-            // If document ID has changed, we need to:
-            // 1. Create a new document with the new ID
-            // 2. Copy all data from the old document
-            // 3. Delete the old document
-
-            // First get all data from the original document
-            originalDocRef.get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            // Create a new map with all the original data
-                            Map<String, Object> allData = documentSnapshot.getData();
-                            if (allData != null) {
-                                // Update with the new farmer info
-                                allData.putAll(farmerData);
-
-                                // Create the new document
-                                newDocRef.set(allData)
-                                        .addOnSuccessListener(aVoid -> {
-                                            // Delete the old document
-                                            originalDocRef.delete()
-                                                    .addOnSuccessListener(aVoid1 -> {
-                                                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                                                        btnSave.setEnabled(true);
-                                                        Toast.makeText(EditFarmerActivity.this, "Farmer information updated successfully", Toast.LENGTH_SHORT).show();
-                                                        finish();
-                                                    })
-                                                    .addOnFailureListener(e -> {
-                                                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                                                        btnSave.setEnabled(true);
-                                                        Toast.makeText(EditFarmerActivity.this, "Error cleaning up old data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                                    });
-                                        })
-                                        .addOnFailureListener(e -> {
-                                            if (progressBar != null) progressBar.setVisibility(View.GONE);
-                                            btnSave.setEnabled(true);
-                                            Toast.makeText(EditFarmerActivity.this, "Error creating updated record: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                        });
-                            }
-                        } else {
-                            if (progressBar != null) progressBar.setVisibility(View.GONE);
-                            btnSave.setEnabled(true);
-                            Toast.makeText(EditFarmerActivity.this, "Original farmer data not found", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                        btnSave.setEnabled(true);
-                        Toast.makeText(EditFarmerActivity.this, "Error retrieving original data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        }
-    }
-
-    private void showDeleteConfirmationDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete Farmer")
-                .setMessage("Are you sure you want to delete this farmer? This action cannot be undone.")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    deleteFarmer();
-                })
-                .setNegativeButton("Cancel", null)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .show();
-    }
-
-    private void deleteFarmer() {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
-        btnDelete.setEnabled(false);
-        btnSave.setEnabled(false);
-
-        db.collection("Barangays")
-                .document(originalBarangay)
-                .collection("Farmers")
-                .document(originalDocumentId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditFarmerActivity.this, "Farmer deleted successfully", Toast.LENGTH_SHORT).show();
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
-                    btnDelete.setEnabled(true);
-                    btnSave.setEnabled(true);
-                    Toast.makeText(EditFarmerActivity.this, "Error deleting farmer: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 }

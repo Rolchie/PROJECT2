@@ -1,17 +1,21 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.MARAMAGAGRICULTURALAID" parent="Theme.MaterialComponents">
-        <!-- Customize your light theme here. -->
-         <item name="colorPrimary">@color/ButtonGreen</item>
+        <!-- Primary colors -->
+        <item name="colorPrimary">@color/BackgroundGreen</item>
+        <item name="colorPrimaryVariant">@color/Green</item> <!-- Add a darker variant -->
+        <item name="colorSecondary">@color/ButtonGreen</item> <!-- Accent color -->
+        <item name="colorOnPrimary">@color/white</item> <!-- Text/icons on primary color -->
+
     </style>
 
     <style name="Theme.MARAMAGAGRICULTURALAID" parent="Base.Theme.MARAMAGAGRICULTURALAID" />
 
     <style name="FAB">
 
-        <item name="cornerSize">40%</item>
-        <item name="strokeColor">@color/black</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="cornerSize">30%</item>
+        <item name="strokeColor">@color/ButtonGreen</item>
+        <item name="strokeWidth">5dp</item>
     </style>
 
     <style name="BottomDialogAnimation">
@@ -24,15 +28,17 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="TabTextAppearance" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="textAllCaps">false</item>
+        <item name="android:fontFamily">@font/poppins</item>
+    </style>
+
     <style name="Theme.MARAMAGAGRICULTURALAID.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.MARAMAGAGRICULTURALAID.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
-    <style name="Theme.YourAppName" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Enable Splash Screen -->
-        <item name="android:windowSplashScreenBackground">@color/white</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/logo</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@color/white</item>
-    </style>
+
 
 </resources>

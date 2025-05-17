@@ -16,6 +16,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 import android.util.Log;
+import android.view.ViewGroup;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -25,6 +26,7 @@ import androidx.appcompat.widget.AppCompatTextView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.maramagagriculturalaid.app.R;
 import com.maramagagriculturalaid.app.SuccessActivities.SuccessedAddFarmer;
@@ -44,7 +46,7 @@ public class FarmInfoActivity extends AppCompatActivity {
     private AppCompatImageButton btnBack;
     private AppCompatButton btnSave;
     private AppCompatTextView tvTitle;
-    private View progressBar;
+    private View progressOverlay;
     private ProgressBar stepProgress;
 
     // Crop form fields
@@ -86,7 +88,6 @@ public class FarmInfoActivity extends AppCompatActivity {
 
     // Crops options
     private final String[] cropsOptions = {
-            "Select crop grown",
             "Sugarcane",
             "Corn (maize)",
             "Rice (palay)",
@@ -165,10 +166,13 @@ public class FarmInfoActivity extends AppCompatActivity {
             }
             fullName += extras.getString("lastName", "");
             farmerData.put("fullName", fullName);
+
+            Log.d(TAG, "Extracted farmer data: " + farmerData.toString());
         }
     }
 
     private void initViews() {
+        progressOverlay = findViewById(R.id.progress_overlay);
         viewFlipper = findViewById(R.id.view_flipper);
         rgFarmType = findViewById(R.id.rg_farm_type);
         rbCrop = findViewById(R.id.rb_crop);
@@ -177,11 +181,10 @@ public class FarmInfoActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btn_back);
         btnSave = findViewById(R.id.btn_save);
         tvTitle = findViewById(R.id.tv_title);
-        progressBar = findViewById(R.id.progress_bar);
         stepProgress = findViewById(R.id.step_progress);
 
-        if (progressBar != null) {
-            progressBar.setVisibility(View.GONE);
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(View.GONE);
         }
 
         // Initialize Crop form views
@@ -216,6 +219,7 @@ public class FarmInfoActivity extends AppCompatActivity {
         etOtherLivestockMixed = findViewById(R.id.et_other_livestock_mixed);
         layoutOtherLivestockMixed = findViewById(R.id.layout_other_livestock_mixed);
         etLivestockCountMixed = findViewById(R.id.et_animal_count_mixed);
+        viewFlipper = findViewById(R.id.view_flipper);
 
         // Initially hide the "Other" fields
         if (layoutOtherCrop != null) {
@@ -463,9 +467,14 @@ public class FarmInfoActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> onBackPressed());
 
         btnSave.setOnClickListener(v -> {
+            Log.d(TAG, "Save button clicked");
             if (validateCurrentForm()) {
+                Log.d(TAG, "Form validation passed");
                 collectCurrentFormData();
+                Log.d(TAG, "Form data collected");
                 saveDataToFirestore();
+            } else {
+                Log.d(TAG, "Form validation failed");
             }
         });
     }
@@ -617,6 +626,7 @@ public class FarmInfoActivity extends AppCompatActivity {
         cropFarmData.put("lotSizeUnit", lotSizeUnit);
 
         cropFarmData.put("farmerId", farmerData.get("farmerId"));
+        cropFarmData.put("farmerName", farmerData.get("fullName"));
 
         Log.d(TAG, "Collected crop farm data: " + cropFarmData.toString());
     }
@@ -643,6 +653,7 @@ public class FarmInfoActivity extends AppCompatActivity {
         livestockFarmData.put("livestockCount", livestockCount);
 
         livestockFarmData.put("farmerId", farmerData.get("farmerId"));
+        livestockFarmData.put("farmerName", farmerData.get("fullName"));
 
         Log.d(TAG, "Collected livestock farm data: " + livestockFarmData.toString());
     }
@@ -687,6 +698,7 @@ public class FarmInfoActivity extends AppCompatActivity {
         mixedFarmData.put("livestockCount", livestockCount);
 
         mixedFarmData.put("farmerId", farmerData.get("farmerId"));
+        mixedFarmData.put("farmerName", farmerData.get("fullName"));
 
         Log.d(TAG, "Collected mixed farm data: " + mixedFarmData.toString());
     }
@@ -701,64 +713,71 @@ public class FarmInfoActivity extends AppCompatActivity {
             return;
         }
 
-        String selectedBarangay;
-        String municipal;
-
-        switch (currentFarmType) {
-            case FARM_TYPE_CROP:
-                selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
-                municipal = tvMunicipalCrop.getText().toString().trim();
-                break;
-            case FARM_TYPE_LIVESTOCK:
-                selectedBarangay = spinnerBarangayLivestock.getSelectedItem().toString();
-                municipal = tvMunicipalLivestock.getText().toString().trim();
-                break;
-            case FARM_TYPE_MIXED:
-                selectedBarangay = spinnerBarangayMixed.getSelectedItem().toString();
-                municipal = tvMunicipalMixed.getText().toString().trim();
-                break;
-            default:
-                selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
-                municipal = tvMunicipalCrop.getText().toString().trim();
-        }
-
-        Log.d(TAG, "Saving data for farmer ID: " + farmerId);
-        Log.d(TAG, "Selected barangay: " + selectedBarangay);
-        Log.d(TAG, "Municipal: " + municipal);
-
-        showLoading(true);
-        Timestamp now = Timestamp.now();
-        farmerData.put("createdAt", now);
-        farmerData.put("lastUpdated", now);
-
-        WriteBatch batch = db.batch();
-
-        String lastName = (String) farmerData.get("lastName");
-        String firstName = (String) farmerData.get("firstName");
-        String middleInitial = (String) farmerData.get("middleInitial");
-
-        String farmerDocId = lastName + ", " + firstName;
-        if (middleInitial != null && !middleInitial.isEmpty()) {
-            farmerDocId += " " + middleInitial + ".";
-        }
-
-        Log.d(TAG, "Generated farmer document ID: " + farmerDocId);
-
         try {
-            DocumentReference farmerRef = db.collection("Barangays")
-                    .document(selectedBarangay)
-                    .collection("Farmers")
-                    .document(farmerDocId);
-            batch.set(farmerRef, farmerData);
-            Log.d(TAG, "Added farmer to Barangays/" + selectedBarangay + "/Farmers/" + farmerDocId);
+            String selectedBarangay;
+            String municipal;
 
-            DocumentReference allFarmersRef = db.collection("Farmers")
-                    .document(municipal)
-                    .collection("Farmers")
-                    .document(farmerDocId);
-            batch.set(allFarmersRef, farmerData);
-            Log.d(TAG, "Added farmer to Farmers/" + municipal + "/Farmers/" + farmerDocId);
+            switch (currentFarmType) {
+                case FARM_TYPE_CROP:
+                    selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
+                    municipal = tvMunicipalCrop.getText().toString().trim();
+                    break;
+                case FARM_TYPE_LIVESTOCK:
+                    selectedBarangay = spinnerBarangayLivestock.getSelectedItem().toString();
+                    municipal = tvMunicipalLivestock.getText().toString().trim();
+                    break;
+                case FARM_TYPE_MIXED:
+                    selectedBarangay = spinnerBarangayMixed.getSelectedItem().toString();
+                    municipal = tvMunicipalMixed.getText().toString().trim();
+                    break;
+                default:
+                    selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
+                    municipal = tvMunicipalCrop.getText().toString().trim();
+            }
 
+            Log.d(TAG, "Saving data for farmer ID: " + farmerId);
+            Log.d(TAG, "Selected barangay: " + selectedBarangay);
+            Log.d(TAG, "Municipal: " + municipal);
+
+            showLoading(true);
+            Timestamp now = Timestamp.now();
+            farmerData.put("createdAt", now);
+            farmerData.put("lastUpdated", now);
+            farmerData.put("barangay", selectedBarangay);
+            farmerData.put("municipal", municipal);
+
+            WriteBatch batch = db.batch();
+
+            String lastName = (String) farmerData.get("lastName");
+            String firstName = (String) farmerData.get("firstName");
+            String middleInitial = (String) farmerData.get("middleInitial");
+
+            if (lastName == null || firstName == null) {
+                Toast.makeText(this, "Name information is incomplete", Toast.LENGTH_SHORT).show();
+                showLoading(false);
+                return;
+            }
+
+            // Format the document ID to match the UI pattern: "Last, First M."
+            String farmerDocId = lastName + ", " + firstName;
+            if (middleInitial != null && !middleInitial.isEmpty()) {
+                farmerDocId += " " + middleInitial + ".";
+            }
+
+            Log.d(TAG, "Generated farmer document ID: " + farmerDocId);
+
+            // 1. Save to Barangays collection
+            DocumentReference barangayRef = db.collection("Barangays").document(selectedBarangay);
+            Map<String, Object> barangayData = new HashMap<>();
+            barangayData.put("name", selectedBarangay);
+            barangayData.put("lastUpdated", now);
+            batch.set(barangayRef, barangayData, SetOptions.merge());
+
+            // 2. Save farmer under Barangay's Farmers subcollection
+            DocumentReference barangayFarmerRef = barangayRef.collection("Farmers").document(farmerDocId);
+            batch.set(barangayFarmerRef, farmerData);
+
+            // 3. Save farm type data under the farmer
             Map<String, Object> farmData;
             String farmTypeDocName;
 
@@ -782,47 +801,53 @@ public class FarmInfoActivity extends AppCompatActivity {
 
             farmData.put("createdAt", now);
             farmData.put("lastUpdated", now);
+            farmData.put("farmerName", farmerDocId); // Use the formatted name
 
-            Log.d(TAG, "Farm data: " + farmData.toString());
-
-            DocumentReference farmTypeRef = farmerRef.collection("FarmType").document(farmTypeDocName);
+            DocumentReference farmTypeRef = barangayFarmerRef.collection("FarmType").document(farmTypeDocName);
             batch.set(farmTypeRef, farmData);
-            Log.d(TAG, "Added farm type data to Barangays path");
 
-            DocumentReference allFarmersFarmRef = allFarmersRef.collection("FarmType").document(farmTypeDocName);
-            batch.set(allFarmersFarmRef, farmData);
-            Log.d(TAG, "Added farm type data to Farmers path");
+            // 4. Update notifications (if needed)
+            DocumentReference notificationRef = db.collection("Notifications").document("new_farmers");
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("lastUpdated", now);
+            notificationData.put("message", "New farmer added: " + farmerDocId);
+            batch.set(notificationRef, notificationData, SetOptions.merge());
 
-            Log.d(TAG, "Starting batch commit...");
-            batch.commit().addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Batch commit succeeded!");
-                showLoading(false);
-                Toast.makeText(FarmInfoActivity.this, "Farmer saved successfully!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(FarmInfoActivity.this, SuccessedAddFarmer.class);
-                intent.putExtra("success_message", "Farmer's information saved successfully!");
-                startActivity(intent);
-                finish();
-            }).addOnFailureListener(e -> {
-                Log.e(TAG, "Batch commit failed", e);
-                showLoading(false);
-                // Show a more detailed error dialog
-                new AlertDialog.Builder(FarmInfoActivity.this)
-                        .setTitle("Database Error")
-                        .setMessage("Error saving data: " + e.getMessage())
-                        .setPositiveButton("OK", null)
-                        .show();
-                Toast.makeText(FarmInfoActivity.this, "Error saving data: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            });
+            // Commit the batch
+            batch.commit()
+                    .addOnCompleteListener(task -> {
+                        showLoading(false);
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "Batch commit succeeded!");
+                            Toast.makeText(FarmInfoActivity.this, "Farmer saved successfully!", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(FarmInfoActivity.this, SuccessedAddFarmer.class);
+                            intent.putExtra("success_message", "Farmer's information saved successfully!");
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            Log.e(TAG, "Batch commit failed", task.getException());
+                            new AlertDialog.Builder(FarmInfoActivity.this)
+                                    .setTitle("Database Error")
+                                    .setMessage("Error saving data: " + (task.getException() != null ?
+                                            task.getException().getMessage() : "Unknown error"))
+                                    .setPositiveButton("OK", null)
+                                    .show();
+                        }
+                    });
         } catch (Exception e) {
-            Log.e(TAG, "Exception before batch commit", e);
+            Log.e(TAG, "Exception in saveDataToFirestore", e);
             showLoading(false);
-            Toast.makeText(FarmInfoActivity.this, "Error preparing data: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            new AlertDialog.Builder(FarmInfoActivity.this)
+                    .setTitle("Error")
+                    .setMessage("An error occurred: " + e.getMessage())
+                    .setPositiveButton("OK", null)
+                    .show();
         }
     }
 
     private void showLoading(boolean isLoading) {
-        if (progressBar != null) {
-            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         }
         btnSave.setEnabled(!isLoading);
         btnBack.setEnabled(!isLoading);

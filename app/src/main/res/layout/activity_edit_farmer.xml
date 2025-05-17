@@ -46,10 +46,11 @@
         android:background="@drawable/main_bg"
         android:elevation="2dp"
         app:layout_constraintTop_toBottomOf="@id/btn_back"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toTopOf="@id/btn_next" />
 
     <!-- Form Content -->
     <ScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
@@ -58,10 +59,12 @@
         android:paddingTop="16dp"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
         android:elevation="3dp"
         app:layout_constraintTop_toTopOf="@id/white_background"
-        app:layout_constraintBottom_toTopOf="@id/btn_save">
-
+        app:layout_constraintBottom_toTopOf="@id/btn_next"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -88,7 +91,8 @@
                 android:textColor="@android:color/darker_gray"
                 android:drawableStart="@drawable/baseline_person_24"
                 android:drawablePadding="8dp"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"
+                android:hint="Farmer ID will be displayed here" />
 
             <!-- Phone Number -->
             <TextView
@@ -107,10 +111,13 @@
                 android:background="@drawable/edittxtbkg"
                 android:padding="12dp"
                 android:inputType="phone"
+                android:textColorHint="@color/black"
+                android:textColor="@color/black"
                 android:hint="Enter Phone Number"
                 android:drawableStart="@drawable/baseline_phone_24"
                 android:drawablePadding="8dp"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"
+                android:maxLength="11" />
 
             <!-- First Name -->
             <TextView
@@ -128,8 +135,9 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/edittxtbkg"
                 android:padding="12dp"
+                android:textColor="@color/black"
                 android:inputType="textPersonName|textCapWords"
-                android:hint="Enter Name"
+                android:hint="Enter First Name"
                 android:drawableStart="@drawable/baseline_person_24"
                 android:drawablePadding="8dp"
                 android:layout_marginBottom="16dp" />
@@ -138,13 +146,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
                 <!-- Last Name -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="2"
                     android:orientation="vertical"
                     android:layout_marginEnd="8dp">
 
@@ -163,8 +172,9 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/edittxtbkg"
                         android:padding="12dp"
+                        android:textColor="@color/black"
                         android:inputType="textPersonName|textCapWords"
-                        android:hint="Enter Last name"
+                        android:hint="Enter Last Name"
                         android:drawableStart="@drawable/baseline_person_24"
                         android:drawablePadding="8dp" />
                 </LinearLayout>
@@ -191,10 +201,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/edittxtbkg"
+                        android:textColorHint="@color/black"
                         android:padding="12dp"
                         android:inputType="textPersonName|textCapCharacters"
                         android:maxLength="1"
-                        android:hint="Enter M.I"
+                        android:textColor="@color/black"
+                        android:hint="M.I"
                         android:drawableStart="@drawable/baseline_person_24"
                         android:drawablePadding="8dp" />
                 </LinearLayout>
@@ -208,7 +220,6 @@
                 android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:layout_marginTop="16dp"
                 android:layout_marginBottom="4dp" />
 
             <TextView
@@ -217,10 +228,14 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/edittxtbkg"
                 android:padding="12dp"
-                android:hint="December 22, 1975"
+                android:textColor="@color/black"
+                android:hint="Select Birthday"
                 android:drawableEnd="@drawable/baseline_calendar_month_24"
                 android:drawablePadding="8dp"
-                android:gravity="center_vertical" />
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true" />
 
             <!-- Help text -->
             <TextView
@@ -229,19 +244,39 @@
                 android:text="Update the information as needed. All fields are required."
                 android:textColor="#757575"
                 android:textSize="14sp"
-                android:layout_marginTop="16dp" />
-
+                android:layout_marginTop="8dp" />
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- Save Button (changed from Next) -->
+    <!-- Progress Overlay -->
+    <FrameLayout
+        android:id="@+id/progress_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:elevation="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/ButtonGreen" />
+
+    </FrameLayout>
+
+    <!-- Next Button -->
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_save"
+        android:id="@+id/btn_next"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:background="@drawable/getstartedbkg"
+        android:background="@drawable/buttons"
         android:backgroundTint="@color/ButtonGreen"
         android:padding="14dp"
         android:text="Next"
@@ -249,6 +284,8 @@
         android:textColor="@color/white"
         android:textSize="16sp"
         android:elevation="4dp"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,6 +1,5 @@
 package com.maramagagriculturalaid.app.FarmersData;
 
-// import android.content.Intent; // Not needed for fragment navigation
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -19,10 +18,12 @@ import androidx.fragment.app.Fragment;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.maramagagriculturalaid.app.R;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class FarmersDataFragment extends Fragment {
 
@@ -31,63 +32,52 @@ public class FarmersDataFragment extends Fragment {
     private AppCompatEditText editTextFarmerId;
     private AppCompatButton buttonSearch, buttonViewAllFarmers, buttonAddFarmer;
     private ProgressBar progressBar;
+
     private FirebaseFirestore db;
+    private FirebaseAuth auth;
+    private String selectedBarangay;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_farmers_data, container, false);
 
-        // Initialize Firebase
         db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
 
-        // Initialize views
         editTextFarmerId = view.findViewById(R.id.editTextFarmerId);
         buttonSearch = view.findViewById(R.id.buttonSearch);
         buttonViewAllFarmers = view.findViewById(R.id.buttonViewAllFarmers);
         buttonAddFarmer = view.findViewById(R.id.buttonAddFarmer);
         progressBar = view.findViewById(R.id.progressBar);
 
-        // Set up click listeners
         setupClickListeners();
 
         return view;
     }
 
     private void setupClickListeners() {
-        // Search for a specific farmer by ID
         buttonSearch.setOnClickListener(v -> {
             String farmerId = editTextFarmerId.getText().toString().trim();
             if (TextUtils.isEmpty(farmerId)) {
                 editTextFarmerId.setError("Please enter a Farmer ID");
                 return;
             }
-
+            if (farmerId.length() != 5) {
+                editTextFarmerId.setError("Farmer ID must be 5 digits");
+                return;
+            }
             searchFarmerById(farmerId);
         });
 
-        // View all farmers
-        buttonViewAllFarmers.setOnClickListener(v -> {
-            loadAllFarmers();
-        });
-
-        // Add a new farmer
-        buttonAddFarmer.setOnClickListener(v -> {
-            // Navigate to add farmer screen
-            navigateToAddFarmer();
-        });
+        buttonViewAllFarmers.setOnClickListener(v -> loadAllFarmers());
+        buttonAddFarmer.setOnClickListener(v -> navigateToAddFarmer());
     }
 
     private void searchFarmerById(String farmerId) {
-        // Validate farmerId before proceeding
-        if (farmerId == null || farmerId.trim().isEmpty()) {
-            Toast.makeText(getContext(), "Farmer ID not provided", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         showProgressBar(true);
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null) {
             showProgressBar(false);
             Toast.makeText(getContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
@@ -98,49 +88,14 @@ public class FarmersDataFragment extends Fragment {
                 .get()
                 .addOnSuccessListener(userDocument -> {
                     if (userDocument.exists()) {
-                        String userRole = userDocument.getString("Role");
                         String barangay = userDocument.getString("Barangay");
+                        selectedBarangay = barangay;
 
-                        Log.d(TAG, "User Role: " + userRole);
-                        Log.d(TAG, "Barangay: " + barangay);
-
-                        if (barangay == null || barangay.trim().isEmpty()) {
-                            showProgressBar(false);
-                            Toast.makeText(getContext(), "Barangay not assigned to user", Toast.LENGTH_SHORT).show();
-                            return;
+                        if (barangay == null || barangay.isEmpty()) {
+                            searchInRootCollection(farmerId);
+                        } else {
+                            searchInBarangayCollection(farmerId, barangay);
                         }
-
-                        if (!"Barangay".equals(userRole)) {
-                            showProgressBar(false);
-                            Toast.makeText(getContext(), "User is not a Barangay user", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        // Search farmer within the user's barangay
-                        db.collection("Barangays").document(barangay)
-                                .collection("Farmers")
-                                .whereEqualTo("farmerId", farmerId)
-                                .get()
-                                .addOnCompleteListener(task -> {
-                                    showProgressBar(false);
-                                    if (task.isSuccessful()) {
-                                        if (task.getResult().isEmpty()) {
-                                            Toast.makeText(getContext(), "No farmer found with ID: " + farmerId,
-                                                    Toast.LENGTH_LONG).show();
-                                        } else {
-                                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                                String documentId = document.getId();
-                                                navigateToFarmerDetails(documentId, barangay);
-                                                break; // Only expect one result, so break here
-                                            }
-                                        }
-                                    } else {
-                                        Log.e(TAG, "Error searching for farmer", task.getException());
-                                        Toast.makeText(getContext(), "Error: " + task.getException().getMessage(),
-                                                Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-
                     } else {
                         showProgressBar(false);
                         Toast.makeText(getContext(), "User document not found", Toast.LENGTH_SHORT).show();
@@ -148,26 +103,91 @@ public class FarmersDataFragment extends Fragment {
                 })
                 .addOnFailureListener(e -> {
                     showProgressBar(false);
-                    Log.e(TAG, "Error getting user data", e);
-                    Toast.makeText(getContext(), "Error getting user data: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Error getting user data", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error getting user document", e);
                 });
     }
 
+    private void searchInBarangayCollection(String farmerId, String barangay) {
+        db.collection("Barangays").document(barangay)
+                .collection("Farmers")
+                .whereEqualTo("farmerId", farmerId)
+                .limit(1)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            DocumentSnapshot farmerDoc = task.getResult().getDocuments().get(0);
+                            navigateToFarmerDetails(farmerDoc, barangay);
+                        } else {
+                            searchInRootCollection(farmerId);
+                        }
+                    } else {
+                        showProgressBar(false);
+                        Toast.makeText(getContext(), "Search error in barangay", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error searching barangay collection", task.getException());
+                    }
+                });
+    }
 
+    private void searchInRootCollection(String farmerId) {
+        db.collection("Farmers")
+                .whereEqualTo("farmerId", farmerId)
+                .limit(1)
+                .get()
+                .addOnCompleteListener(task -> {
+                    showProgressBar(false);
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            DocumentSnapshot farmerDoc = task.getResult().getDocuments().get(0);
+                            String barangay = farmerDoc.getString("barangay");
+                            navigateToFarmerDetails(farmerDoc, barangay);
+                        } else {
+                            Toast.makeText(getContext(), "No farmer found with ID: " + farmerId, Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "Search error in root collection", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error searching root collection", task.getException());
+                    }
+                });
+    }
 
-    // Updated to include barangayId
-    private void navigateToFarmerDetails(String documentId, String barangayId) {
-        Intent intent = new Intent(getActivity(), FarmersDetailsActivity.class);
-        intent.putExtra("FARMER_ID", documentId);
-        intent.putExtra("BARANGAY_ID", barangayId);
-        startActivity(intent);
+    private void navigateToFarmerDetails(DocumentSnapshot farmerDoc, String barangay) {
+        showProgressBar(false);
+
+        if (!farmerDoc.exists()) {
+            Toast.makeText(getContext(), "Farmer document not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(getContext(), FarmersDetailsActivity.class);
+
+            // Pass all farmer data
+            Map<String, Object> farmerData = farmerDoc.getData();
+            if (farmerData != null) {
+                for (Map.Entry<String, Object> entry : farmerData.entrySet()) {
+                    if (entry.getValue() instanceof String) {
+                        intent.putExtra(entry.getKey(), (String) entry.getValue());
+                    }
+                }
+            }
+
+            // Pass document reference
+            intent.putExtra("documentId", farmerDoc.getId());
+            intent.putExtra("barangay", barangay != null ? barangay : selectedBarangay);
+
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Error opening farmer details", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error navigating to FarmersDetailsActivity", e);
+        }
     }
 
     private void loadAllFarmers() {
         showProgressBar(true);
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null) {
             showProgressBar(false);
             Toast.makeText(getContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
@@ -178,33 +198,14 @@ public class FarmersDataFragment extends Fragment {
                 .get()
                 .addOnSuccessListener(userDocument -> {
                     if (userDocument.exists()) {
-                        String userRole = userDocument.getString("Role");
                         String barangay = userDocument.getString("Barangay");
-
                         if (barangay == null || barangay.isEmpty()) {
                             showProgressBar(false);
                             Toast.makeText(getContext(), "Barangay not assigned", Toast.LENGTH_SHORT).show();
                             return;
                         }
 
-                        db.collection("Barangays")
-                                .document(barangay)
-                                .collection("Farmers")
-                                .get()
-                                .addOnSuccessListener(queryDocumentSnapshots -> {
-                                    showProgressBar(false);
-                                    if (queryDocumentSnapshots.isEmpty()) {
-                                        Toast.makeText(getContext(), "No farmers found", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        navigateToFarmersListActivity(userRole, barangay);
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    showProgressBar(false);
-                                    Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    Log.e(TAG, "Firestore error: ", e);
-                                });
-
+                        navigateToFarmersListActivity(barangay);
                     } else {
                         showProgressBar(false);
                         Toast.makeText(getContext(), "User data not found", Toast.LENGTH_SHORT).show();
@@ -212,29 +213,39 @@ public class FarmersDataFragment extends Fragment {
                 })
                 .addOnFailureListener(e -> {
                     showProgressBar(false);
-                    Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "User doc error: ", e);
+                    Toast.makeText(getContext(), "Error getting user data", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error getting user document", e);
                 });
     }
 
-
-    private void navigateToFarmersListActivity(String userRole, String userBarangayId) {
-        Intent intent = new Intent(getContext(), FarmersListActivity.class);
-        // Pass user role and barangayId to the FarmersListActivity
-        intent.putExtra("Role", userRole);
-        intent.putExtra("Barangays", userBarangayId);
-        startActivity(intent);
+    private void navigateToFarmersListActivity(String barangay) {
+        try {
+            Intent intent = new Intent(getContext(), FarmersListActivity.class);
+            intent.putExtra("barangay", barangay);
+            startActivity(intent);
+            showProgressBar(false);
+        } catch (Exception e) {
+            showProgressBar(false);
+            Toast.makeText(getContext(), "Error opening farmers list", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error navigating to FarmersListActivity", e);
+        }
     }
 
     private void navigateToAddFarmer() {
-        Intent intent = new Intent(requireActivity(), AddFarmerAcitivity.class);
-        startActivity(intent);
+        try {
+            startActivity(new Intent(requireActivity(), AddFarmerAcitivity.class));
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Error opening add farmer screen", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error navigating to AddFarmerActivity", e);
+        }
     }
 
     private void showProgressBar(boolean show) {
-        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
-        buttonSearch.setEnabled(!show);
-        buttonViewAllFarmers.setEnabled(!show);
-        buttonAddFarmer.setEnabled(!show);
+        if (progressBar != null) {
+            progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (buttonSearch != null) buttonSearch.setEnabled(!show);
+        if (buttonViewAllFarmers != null) buttonViewAllFarmers.setEnabled(!show);
+        if (buttonAddFarmer != null) buttonAddFarmer.setEnabled(!show);
     }
 }

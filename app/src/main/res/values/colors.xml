@@ -3,11 +3,15 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="LightGreen">#EDFFDE</color>
-    <color name="Green">#316C40</color>
+    <color name="Green">#008000</color>
     <color name="DarkGreen">#294E28</color>
     <color name="ButtonGreen">#4CAF50</color>
     <color name="ContainerGreen">#D8EACF</color>
     <color name="BackgroundGreen">#B5E5A7</color>
     <color name="dark_gray">#666666</color>
     <color name="red">#ff0000</color>
+    <color name="blue">#0000ff</color>
+    <color name="orange">#ffa500 </color>
+    <color name="pending">#FFFDE7</color>
+
 </resources>

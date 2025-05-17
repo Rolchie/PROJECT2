@@ -146,6 +146,18 @@ public class AddFarmerAcitivity extends AppCompatActivity {
             }
         }
 
+        String phone = etPhone.getText().toString().trim();
+        if (TextUtils.isEmpty(phone)) {
+            etPhone.setError("Phone number is required");
+            isValid = false;
+        } else if (phone.length() != 11) {
+            etPhone.setError("Phone number must be exactly 11 digits");
+            isValid = false;
+        } else if (!phone.matches("\\d{11}")) {
+            etPhone.setError("Phone number must contain only digits");
+            isValid = false;
+        }
+
         if (TextUtils.isEmpty(etFirstName.getText())) {
             etFirstName.setError("First name is required");
             isValid = false;
