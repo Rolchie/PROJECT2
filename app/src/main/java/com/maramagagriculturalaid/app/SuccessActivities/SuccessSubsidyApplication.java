@@ -9,7 +9,7 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.maramagagriculturalaid.app.R;
-import com.maramagagriculturalaid.app.SubsidyManagement.SubsidyRequest;
+import com.maramagagriculturalaid.app.MainActivity;
 
 public class SuccessSubsidyApplication extends AppCompatActivity {
 
@@ -26,9 +26,15 @@ public class SuccessSubsidyApplication extends AppCompatActivity {
         btnBackToHome.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Navigate back to main activity and clear the stack
-                Intent intent = new Intent(SuccessSubsidyApplication.this, SubsidyRequest.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                // Navigate back to MainActivity with MunicipalHomeFragment
+                Intent intent = new Intent(SuccessSubsidyApplication.this, MainActivity.class);
+
+                // Add extra to specify which fragment to show
+                intent.putExtra("navigate_to_fragment", "municipal_home");
+
+                // Clear the activity stack to prevent going back to success screen
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
                 startActivity(intent);
                 finish();
             }

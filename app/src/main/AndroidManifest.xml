@@ -19,6 +19,12 @@
         android:theme="@style/Theme.MARAMAGAGRICULTURALAID"
         tools:targetApi="31">
         <activity
+            android:name=".Municipal.MunicipalNotifications.MunicipalNotificationDetail"
+            android:exported="false" />
+        <activity
+            android:name=".SuccessActivities.SuccessedApprovedSubsidy"
+            android:exported="false" />
+        <activity
             android:name=".Municipal.BarangayOverview.MunicipalFarmersDetails"
             android:exported="false" />
         <activity

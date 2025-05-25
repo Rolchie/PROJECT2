@@ -13,10 +13,10 @@ import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 import android.util.Log;
-import android.view.ViewGroup;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -24,15 +24,20 @@ import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.appcompat.widget.AppCompatTextView;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.maramagagriculturalaid.app.R;
 import com.maramagagriculturalaid.app.SuccessActivities.SuccessedAddFarmer;
+import com.maramagagriculturalaid.app.ActivityLogger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 
 public class FarmInfoActivity extends AppCompatActivity {
 
@@ -50,22 +55,22 @@ public class FarmInfoActivity extends AppCompatActivity {
     private ProgressBar stepProgress;
 
     // Crop form fields
-    private AppCompatTextView tvMunicipalCrop;
+    private TextView tvMunicipalCrop, tvBarangayCrop;
     private EditText etStreetCrop, etLotSize, etOtherCrop;
-    private Spinner spinnerBarangayCrop, spinnerUnit, spinnerCropsGrown;
+    private Spinner spinnerUnit, spinnerCropsGrown;
     private LinearLayout layoutOtherCrop;
 
     // Livestock form fields
-    private AppCompatTextView tvMunicipalLivestock;
+    private TextView tvMunicipalLivestock, tvBarangayLivestock;
     private EditText etStreetLivestock, etOtherLivestock, etLivestockCount;
-    private Spinner spinnerBarangayLivestock, spinnerLivestockType;
+    private Spinner spinnerLivestockType;
     private LinearLayout layoutOtherLivestock;
 
     // Mixed form fields
-    private AppCompatTextView tvMunicipalMixed;
+    private TextView tvMunicipalMixed, tvBarangayMixed;
     private EditText etStreetMixed, etOtherCropMixed, etLotSizeMixed;
     private EditText etOtherLivestockMixed, etLivestockCountMixed;
-    private Spinner spinnerBarangayMixed, spinnerUnitMixed, spinnerCropsGrownMixed;
+    private Spinner spinnerUnitMixed, spinnerCropsGrownMixed;
     private Spinner spinnerLivestockTypeMixed;
     private LinearLayout layoutOtherCropMixed, layoutOtherLivestockMixed;
 
@@ -81,13 +86,25 @@ public class FarmInfoActivity extends AppCompatActivity {
     private String selectedCropMixed;
     private String selectedLivestockMixed;
 
+    // User's assigned barangay
+    private String userBarangay;
+
     private static final String TAG = "FarmInfoActivity";
+
+    // Predefined barangays in Maramag Municipality
+    private final String[] availableBarangays = {
+            "Anahawon", "Base Camp", "Bayabason", "Camp 1", "Colambugon",
+            "Dagumba-an", "Danggawan", "Dologon", "Kisanday", "Kuya",
+            "La Roxas", "Panadtalan", "Panalsalan", "North Poblacion", "South Poblacion",
+            "San Miguel", "San Roque", "Tubigon", "Kiharong", "Bagongsilang"
+    };
 
     // Unit measurement options
     private final String[] unitOptions = {"Square Meter(sqm)", "Hectares(ha)", "Are", "Square Feet(Sq ft)"};
 
     // Crops options
     private final String[] cropsOptions = {
+            "Select Crop Type",
             "Sugarcane",
             "Corn (maize)",
             "Rice (palay)",
@@ -136,13 +153,189 @@ public class FarmInfoActivity extends AppCompatActivity {
 
         extractFarmerData();
         initViews();
-        setupFarmTypeSelection();
-        setupClickListeners();
-        setupSpinners();
-        setupUnitSpinner();
-        setupCropsSpinner();
-        setupLivestockSpinner();
-        setDefaultMunicipalValues();
+
+        // Initialize predefined barangays in database first
+        initializePredefinedBarangays();
+
+        // Get user's barangay first, then setup the rest
+        getCurrentUserBarangay();
+    }
+
+    private void initializePredefinedBarangays() {
+        Log.d(TAG, "Initializing predefined barangays in database");
+
+        Timestamp now = Timestamp.now();
+        WriteBatch batch = db.batch();
+
+        for (String barangayName : availableBarangays) {
+            DocumentReference barangayRef = db.collection("Barangays").document(barangayName);
+            Map<String, Object> barangayData = new HashMap<>();
+            barangayData.put("name", barangayName);
+            barangayData.put("municipal", "Maramag");
+            barangayData.put("province", "Bukidnon");
+            barangayData.put("region", "Northern Mindanao");
+            barangayData.put("isActive", true);
+            barangayData.put("createdAt", now);
+            barangayData.put("lastUpdated", now);
+
+            // Use merge to avoid overwriting existing data
+            batch.set(barangayRef, barangayData, SetOptions.merge());
+        }
+
+        batch.commit()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Successfully initialized predefined barangays");
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error initializing predefined barangays", e);
+                    // Continue anyway, this is not critical for the main functionality
+                });
+    }
+
+    private void getCurrentUserBarangay() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            showLoading(true);
+            Log.d(TAG, "Getting barangay for user: " + currentUser.getUid());
+
+            db.collection("Users")
+                    .document(currentUser.getUid())
+                    .get()
+                    .addOnSuccessListener(userDocument -> {
+                        showLoading(false);
+                        if (userDocument.exists()) {
+                            Log.d(TAG, "User document exists. Data: " + userDocument.getData());
+
+                            // Try different field names that might contain barangay info
+                            userBarangay = userDocument.getString("Barangay");
+                            if (userBarangay == null || userBarangay.isEmpty()) {
+                                userBarangay = userDocument.getString("barangay");
+                            }
+                            if (userBarangay == null || userBarangay.isEmpty()) {
+                                userBarangay = userDocument.getString("assignedBarangay");
+                            }
+                            if (userBarangay == null || userBarangay.isEmpty()) {
+                                userBarangay = userDocument.getString("location");
+                            }
+
+                            if (userBarangay != null && !userBarangay.isEmpty()) {
+                                Log.d(TAG, "User's assigned barangay: " + userBarangay);
+
+                                // Validate if the barangay exists in our predefined list
+                                boolean isValidBarangay = false;
+                                for (String barangay : availableBarangays) {
+                                    if (barangay.equalsIgnoreCase(userBarangay)) {
+                                        userBarangay = barangay; // Use the correct case
+                                        isValidBarangay = true;
+                                        break;
+                                    }
+                                }
+
+                                if (isValidBarangay) {
+                                    // Set the barangay in all forms
+                                    setUserBarangayInForms();
+
+                                    // Now setup the rest of the UI
+                                    setupFarmTypeSelection();
+                                    setupClickListeners();
+                                    setupUnitSpinner();
+                                    setupCropsSpinner();
+                                    setupLivestockSpinner();
+                                    setDefaultMunicipalValues();
+                                } else {
+                                    Log.w(TAG, "Invalid barangay: " + userBarangay);
+                                    showBarangaySelectionDialog();
+                                }
+                            } else {
+                                Log.w(TAG, "No barangay found in user document");
+                                showBarangaySelectionDialog();
+                            }
+                        } else {
+                            Log.e(TAG, "User document does not exist");
+                            Toast.makeText(this, "Error: User data not found. Please contact support.", Toast.LENGTH_LONG).show();
+                            showBarangaySelectionDialog(); // Still allow user to select barangay
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        showLoading(false);
+                        Log.e(TAG, "Error getting user barangay", e);
+                        Toast.makeText(this, "Error: Failed to get user information. Please check your connection.", Toast.LENGTH_LONG).show();
+                        showBarangaySelectionDialog(); // Allow user to select barangay as fallback
+                    });
+        } else {
+            Toast.makeText(this, "Error: User not authenticated", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void showBarangaySelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Your Barangay");
+        builder.setMessage("Please select your assigned barangay to continue:");
+
+        builder.setItems(availableBarangays, (dialog, which) -> {
+            userBarangay = availableBarangays[which];
+            Log.d(TAG, "User selected barangay: " + userBarangay);
+
+            // Update user's barangay in Firestore
+            updateUserBarangay(userBarangay);
+
+            // Set the barangay in all forms
+            setUserBarangayInForms();
+
+            // Setup the rest of the UI
+            setupFarmTypeSelection();
+            setupClickListeners();
+            setupUnitSpinner();
+            setupCropsSpinner();
+            setupLivestockSpinner();
+            setDefaultMunicipalValues();
+
+            dialog.dismiss();
+        });
+
+        builder.setCancelable(false);
+        builder.show();
+    }
+
+    private void updateUserBarangay(String barangay) {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("Barangay", barangay);
+            updates.put("barangay", barangay); // Add both field names for compatibility
+            updates.put("municipal", "Maramag");
+            updates.put("province", "Bukidnon");
+            updates.put("lastUpdated", Timestamp.now());
+
+            db.collection("Users")
+                    .document(currentUser.getUid())
+                    .set(updates, SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "User barangay updated successfully");
+                        Toast.makeText(this, "Barangay updated: " + barangay, Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error updating user barangay", e);
+                        Toast.makeText(this, "Warning: Could not save barangay preference", Toast.LENGTH_SHORT).show();
+                    });
+        }
+    }
+
+    private void setUserBarangayInForms() {
+        // Set the user's barangay in all form TextViews
+        if (tvBarangayCrop != null) {
+            tvBarangayCrop.setText(userBarangay);
+            Log.d(TAG, "Set crop form barangay to: " + userBarangay);
+        }
+        if (tvBarangayLivestock != null) {
+            tvBarangayLivestock.setText(userBarangay);
+            Log.d(TAG, "Set livestock form barangay to: " + userBarangay);
+        }
+        if (tvBarangayMixed != null) {
+            tvBarangayMixed.setText(userBarangay);
+            Log.d(TAG, "Set mixed form barangay to: " + userBarangay);
+        }
     }
 
     private void extractFarmerData() {
@@ -189,9 +382,9 @@ public class FarmInfoActivity extends AppCompatActivity {
 
         // Initialize Crop form views
         tvMunicipalCrop = findViewById(R.id.tv_municipal_crop);
+        tvBarangayCrop = findViewById(R.id.tv_barangay_crop);
         etStreetCrop = findViewById(R.id.et_street_crop);
         etLotSize = findViewById(R.id.et_lot_size);
-        spinnerBarangayCrop = findViewById(R.id.spinner_barangay_crop);
         spinnerUnit = findViewById(R.id.spinner_unit);
         spinnerCropsGrown = findViewById(R.id.spinner_crops_grown);
         etOtherCrop = findViewById(R.id.et_other_crop);
@@ -199,8 +392,8 @@ public class FarmInfoActivity extends AppCompatActivity {
 
         // Initialize Livestock form views
         tvMunicipalLivestock = findViewById(R.id.tv_municipal_livestock);
+        tvBarangayLivestock = findViewById(R.id.tv_barangay_livestock);
         etStreetLivestock = findViewById(R.id.et_street_livestock);
-        spinnerBarangayLivestock = findViewById(R.id.spinner_barangay_livestock);
         spinnerLivestockType = findViewById(R.id.spinner_livestock_type);
         etOtherLivestock = findViewById(R.id.et_other_livestock);
         layoutOtherLivestock = findViewById(R.id.layout_other_livestock);
@@ -208,8 +401,8 @@ public class FarmInfoActivity extends AppCompatActivity {
 
         // Initialize Mixed form views
         tvMunicipalMixed = findViewById(R.id.tv_municipal_mixed);
+        tvBarangayMixed = findViewById(R.id.tv_barangay_mixed);
         etStreetMixed = findViewById(R.id.et_street_mixed);
-        spinnerBarangayMixed = findViewById(R.id.spinner_barangay_mixed);
         spinnerCropsGrownMixed = findViewById(R.id.spinner_crops_grown_mixed);
         etOtherCropMixed = findViewById(R.id.et_other_crop_mixed);
         layoutOtherCropMixed = findViewById(R.id.layout_other_crop_mixed);
@@ -219,7 +412,6 @@ public class FarmInfoActivity extends AppCompatActivity {
         etOtherLivestockMixed = findViewById(R.id.et_other_livestock_mixed);
         layoutOtherLivestockMixed = findViewById(R.id.layout_other_livestock_mixed);
         etLivestockCountMixed = findViewById(R.id.et_animal_count_mixed);
-        viewFlipper = findViewById(R.id.view_flipper);
 
         // Initially hide the "Other" fields
         if (layoutOtherCrop != null) {
@@ -266,25 +458,6 @@ public class FarmInfoActivity extends AppCompatActivity {
         });
     }
 
-    private void setupSpinners() {
-        String[] barangays = {"Anahawon", "Base Camp", "Bayabason", "Bagongsilang", "Camp 1", "Colambugon", "Dagumba-an", "Danggawan", "Dologon", "Kisanday", "Kuya", "La Roxas", "Panadtalan", "Panalsalan", "North Poblacion", "South Poblacion", "San Miguel", "San Roque", "Tubigon", "Kiharong"};
-
-        // Setup for Crop form
-        ArrayAdapter<String> adapterCrop = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, barangays);
-        adapterCrop.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerBarangayCrop.setAdapter(adapterCrop);
-
-        // Setup for Livestock form
-        ArrayAdapter<String> adapterLivestock = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, barangays);
-        adapterLivestock.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerBarangayLivestock.setAdapter(adapterLivestock);
-
-        // Setup for Mixed form
-        ArrayAdapter<String> adapterMixed = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, barangays);
-        adapterMixed.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerBarangayMixed.setAdapter(adapterMixed);
-    }
-
     private void setupUnitSpinner() {
         // Create adapter for unit measurement spinner
         ArrayAdapter<String> unitAdapter = new ArrayAdapter<>(
@@ -294,8 +467,6 @@ public class FarmInfoActivity extends AppCompatActivity {
         );
         unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerUnit.setAdapter(unitAdapter);
-
-        // Set default selection to "sqm"
         spinnerUnit.setSelection(0);
 
         // Setup for Mixed form
@@ -306,8 +477,6 @@ public class FarmInfoActivity extends AppCompatActivity {
         );
         unitAdapterMixed.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerUnitMixed.setAdapter(unitAdapterMixed);
-
-        // Set default selection to "sqm"
         spinnerUnitMixed.setSelection(0);
     }
 
@@ -600,11 +769,11 @@ public class FarmInfoActivity extends AppCompatActivity {
     }
 
     private void collectCropFormData() {
-        cropFarmData.clear(); // Clear previous data to avoid issues
+        cropFarmData.clear();
 
         cropFarmData.put("farmType", "Crop");
-        cropFarmData.put("municipal", tvMunicipalCrop.getText().toString().trim());
-        cropFarmData.put("barangay", spinnerBarangayCrop.getSelectedItem().toString());
+        cropFarmData.put("municipal", "Maramag");
+        cropFarmData.put("barangay", userBarangay);
         cropFarmData.put("street", etStreetCrop.getText().toString().trim());
 
         // Get the selected crop
@@ -632,11 +801,11 @@ public class FarmInfoActivity extends AppCompatActivity {
     }
 
     private void collectLivestockFormData() {
-        livestockFarmData.clear(); // Clear previous data to avoid issues
+        livestockFarmData.clear();
 
         livestockFarmData.put("farmType", "Livestock");
-        livestockFarmData.put("municipal", tvMunicipalLivestock.getText().toString().trim());
-        livestockFarmData.put("barangay", spinnerBarangayLivestock.getSelectedItem().toString());
+        livestockFarmData.put("municipal", "Maramag");
+        livestockFarmData.put("barangay", userBarangay);
         livestockFarmData.put("street", etStreetLivestock.getText().toString().trim());
 
         // Get the selected livestock type
@@ -659,11 +828,11 @@ public class FarmInfoActivity extends AppCompatActivity {
     }
 
     private void collectMixedFormData() {
-        mixedFarmData.clear(); // Clear previous data to avoid issues
+        mixedFarmData.clear();
 
         mixedFarmData.put("farmType", "Mixed");
-        mixedFarmData.put("municipal", tvMunicipalMixed.getText().toString().trim());
-        mixedFarmData.put("barangay", spinnerBarangayMixed.getSelectedItem().toString());
+        mixedFarmData.put("municipal", "Maramag");
+        mixedFarmData.put("barangay", userBarangay);
         mixedFarmData.put("street", etStreetMixed.getText().toString().trim());
 
         // Get the selected crop
@@ -713,38 +882,22 @@ public class FarmInfoActivity extends AppCompatActivity {
             return;
         }
 
+        if (userBarangay == null || userBarangay.isEmpty()) {
+            Toast.makeText(this, "Error: User barangay not available", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Save failed: User barangay is empty");
+            return;
+        }
+
         try {
-            String selectedBarangay;
-            String municipal;
-
-            switch (currentFarmType) {
-                case FARM_TYPE_CROP:
-                    selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
-                    municipal = tvMunicipalCrop.getText().toString().trim();
-                    break;
-                case FARM_TYPE_LIVESTOCK:
-                    selectedBarangay = spinnerBarangayLivestock.getSelectedItem().toString();
-                    municipal = tvMunicipalLivestock.getText().toString().trim();
-                    break;
-                case FARM_TYPE_MIXED:
-                    selectedBarangay = spinnerBarangayMixed.getSelectedItem().toString();
-                    municipal = tvMunicipalMixed.getText().toString().trim();
-                    break;
-                default:
-                    selectedBarangay = spinnerBarangayCrop.getSelectedItem().toString();
-                    municipal = tvMunicipalCrop.getText().toString().trim();
-            }
-
             Log.d(TAG, "Saving data for farmer ID: " + farmerId);
-            Log.d(TAG, "Selected barangay: " + selectedBarangay);
-            Log.d(TAG, "Municipal: " + municipal);
+            Log.d(TAG, "User's barangay: " + userBarangay);
 
             showLoading(true);
             Timestamp now = Timestamp.now();
             farmerData.put("createdAt", now);
             farmerData.put("lastUpdated", now);
-            farmerData.put("barangay", selectedBarangay);
-            farmerData.put("municipal", municipal);
+            farmerData.put("barangay", userBarangay);
+            farmerData.put("municipal", "Maramag");
 
             WriteBatch batch = db.batch();
 
@@ -766,14 +919,18 @@ public class FarmInfoActivity extends AppCompatActivity {
 
             Log.d(TAG, "Generated farmer document ID: " + farmerDocId);
 
-            // 1. Save to Barangays collection
-            DocumentReference barangayRef = db.collection("Barangays").document(selectedBarangay);
+            // 1. Ensure barangay document exists with complete information
+            DocumentReference barangayRef = db.collection("Barangays").document(userBarangay);
             Map<String, Object> barangayData = new HashMap<>();
-            barangayData.put("name", selectedBarangay);
+            barangayData.put("name", userBarangay);
+            barangayData.put("municipal", "Maramag");
+            barangayData.put("province", "Bukidnon");
+            barangayData.put("region", "Northern Mindanao");
+            barangayData.put("isActive", true);
             barangayData.put("lastUpdated", now);
             batch.set(barangayRef, barangayData, SetOptions.merge());
 
-            // 2. Save farmer under Barangay's Farmers subcollection
+            // 2. Save farmer under user's Barangay's Farmers subcollection
             DocumentReference barangayFarmerRef = barangayRef.collection("Farmers").document(farmerDocId);
             batch.set(barangayFarmerRef, farmerData);
 
@@ -801,16 +958,16 @@ public class FarmInfoActivity extends AppCompatActivity {
 
             farmData.put("createdAt", now);
             farmData.put("lastUpdated", now);
-            farmData.put("farmerName", farmerDocId); // Use the formatted name
+            farmData.put("farmerName", farmerDocId);
 
             DocumentReference farmTypeRef = barangayFarmerRef.collection("FarmType").document(farmTypeDocName);
             batch.set(farmTypeRef, farmData);
 
-            // 4. Update notifications (if needed)
+            // 4. Update notifications
             DocumentReference notificationRef = db.collection("Notifications").document("new_farmers");
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("lastUpdated", now);
-            notificationData.put("message", "New farmer added: " + farmerDocId);
+            notificationData.put("message", "New farmer added to " + userBarangay + ": " + farmerDocId);
             batch.set(notificationRef, notificationData, SetOptions.merge());
 
             // Commit the batch
@@ -819,16 +976,23 @@ public class FarmInfoActivity extends AppCompatActivity {
                         showLoading(false);
                         if (task.isSuccessful()) {
                             Log.d(TAG, "Batch commit succeeded!");
-                            Toast.makeText(FarmInfoActivity.this, "Farmer saved successfully!", Toast.LENGTH_SHORT).show();
+
+                            String farmerFullName = (String) farmerData.get("fullName");
+                            Log.d(TAG, "Logging farmer addition: " + farmerFullName + " to " + userBarangay);
+                            ActivityLogger.logFarmerAdded(userBarangay, farmerFullName);
+
+                            Toast.makeText(FarmInfoActivity.this, "Farmer saved successfully to " + userBarangay + "!", Toast.LENGTH_SHORT).show();
                             Intent intent = new Intent(FarmInfoActivity.this, SuccessedAddFarmer.class);
-                            intent.putExtra("success_message", "Farmer's information saved successfully!");
+                            intent.putExtra("success_message", "Farmer's information saved successfully to " + userBarangay + "!");
+                            intent.putExtra("farmer_name", farmerFullName);
+                            intent.putExtra("barangay", userBarangay);
                             startActivity(intent);
                             finish();
                         } else {
                             Log.e(TAG, "Batch commit failed", task.getException());
                             new AlertDialog.Builder(FarmInfoActivity.this)
                                     .setTitle("Database Error")
-                                    .setMessage("Error saving data: " + (task.getException() != null ?
+                                    .setMessage("Error saving data to " + userBarangay + ": " + (task.getException() != null ?
                                             task.getException().getMessage() : "Unknown error"))
                                     .setPositiveButton("OK", null)
                                     .show();

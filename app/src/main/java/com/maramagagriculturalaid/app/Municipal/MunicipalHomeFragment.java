@@ -14,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -115,6 +116,11 @@ public class MunicipalHomeFragment extends Fragment {
 
         // Load recent activities
         loadRecentActivities();
+
+        // Debug after a short delay to see the final state
+        view.postDelayed(() -> {
+            debugRecyclerView();
+        }, 1000);
     }
 
     private void initializeViews() {
@@ -138,9 +144,15 @@ public class MunicipalHomeFragment extends Fragment {
         // Activity section - Updated to use MunicipalActivityAdapter
         activityRecyclerView = rootView.findViewById(R.id.activityRecyclerView);
         if (activityRecyclerView != null) {
+            Log.d(TAG, "RecyclerView found, setting up...");
             activityRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
             activityAdapter = new MunicipalActivityAdapter(activityItems, getContext());
             activityRecyclerView.setAdapter(activityAdapter);
+
+            // Add debug logging
+            debugRecyclerView();
+        } else {
+            Log.e(TAG, "RecyclerView not found! Check the ID in your layout.");
         }
     }
 
@@ -209,7 +221,7 @@ public class MunicipalHomeFragment extends Fragment {
                         titleText.setText("Municipal Official");
                     }
                     if (emailText != null && currentUser.getEmail() != null) {
-                        titleText.setText(currentUser.getEmail());
+                        emailText.setText(currentUser.getEmail());
                     }
                 }
             });
@@ -353,7 +365,6 @@ public class MunicipalHomeFragment extends Fragment {
 
         if (isAdded()) {
             // Find the TextView for total pending subsidies in the barangay overview container
-            // You'll need to replace this with the actual ID from your layout
             TextView totalPendingSubsidiesValue = rootView.findViewById(R.id.totalSubsidyValue);
 
             if (totalPendingSubsidiesValue != null) {
@@ -446,11 +457,11 @@ public class MunicipalHomeFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // View All Barangays button - Updated to navigate to BarangayOverviewAttachment
+        // View All Barangays button - Updated to navigate to BarangayOverviewFragment
         if (viewDetailsButton != null) {
             viewDetailsButton.setOnClickListener(v -> {
-                Intent intent = new Intent(getActivity(), BarangayOverview.class);
-                startActivity(intent);
+                Log.d(TAG, "Navigating to BarangayOverviewFragment");
+                navigateToBarangayOverview();
             });
         }
 
@@ -491,35 +502,226 @@ public class MunicipalHomeFragment extends Fragment {
         }
     }
 
+    /**
+     * Navigate to BarangayOverviewFragment using fragment transaction
+     */
+    /**
+     * Navigate to BarangayOverviewFragment using fragment transaction
+     */
+    private void navigateToBarangayOverview() {
+        try {
+            if (getActivity() != null && isAdded()) {
+                // Create new instance of BarangayOverviewFragment using default constructor
+                BarangayOverview barangayOverviewFragment = new BarangayOverview();
+
+                // Get the fragment manager and start transaction
+                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+
+                // Replace the current fragment with BarangayOverviewFragment
+                // Using the correct container ID from MunicipalActivity
+                transaction.replace(R.id.frameLayout, barangayOverviewFragment);
+
+                // Add to back stack so user can navigate back
+                transaction.addToBackStack("BarangayOverview");
+
+                // Commit the transaction
+                transaction.commit();
+
+                Log.d(TAG, "Successfully navigated to BarangayOverviewFragment");
+            } else {
+                Log.e(TAG, "Cannot navigate: Activity is null or fragment not added");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error navigating to BarangayOverviewFragment", e);
+            if (isAdded()) {
+                Toast.makeText(getContext(), "Error opening Barangay Overview", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void loadRecentActivities() {
+        Log.d(TAG, "Loading recent activities...");
+
         // Clear existing items
         activityItems.clear();
 
-        // Load activities from Firestore
-        db.collection("activities")
-                .orderBy("timestamp")
-                .limit(10)
+        // Create sample activities for testing
+        createSampleActivities();
+
+        // Uncomment this line later to load real data from Firestore
+        // loadRealActivitiesFromFirestore();
+    }
+
+    private void createSampleActivities() {
+        Log.d(TAG, "Creating sample activities for testing...");
+
+        // Clear existing items
+        activityItems.clear();
+
+        // Create sample activities
+        activityItems.add(new ActivityItem(
+                "New Farmer Registration",
+                "Juan Dela Cruz registered as a new farmer in Barangay San Jose",
+                "add",
+                "2h ago"
+        ));
+
+        activityItems.add(new ActivityItem(
+                "Subsidy Request Approved",
+                "Rice subsidy request for Maria Santos has been approved",
+                "approved",
+                "4h ago"
+        ));
+
+        activityItems.add(new ActivityItem(
+                "Document Updated",
+                "Land title documents updated for Pedro Garcia",
+                "update",
+                "1d ago"
+        ));
+
+        activityItems.add(new ActivityItem(
+                "Subsidy Request Rejected",
+                "Fertilizer subsidy request was rejected due to incomplete documents",
+                "rejected",
+                "2d ago"
+        ));
+
+        activityItems.add(new ActivityItem(
+                "New Barangay Added",
+                "Barangay Nueva Esperanza was added to the system",
+                "create",
+                "3d ago"
+        ));
+
+        activityItems.add(new ActivityItem(
+                "Farmer Profile Updated",
+                "Ana Rodriguez updated her farming information",
+                "edit",
+                "5h ago"
+        ));
+
+        Log.d(TAG, "Created " + activityItems.size() + " sample activities");
+
+        // Notify adapter of data change
+        if (activityAdapter != null) {
+            activityAdapter.notifyDataSetChanged();
+            Log.d(TAG, "Adapter notified of data change");
+        } else {
+            Log.w(TAG, "Activity adapter is null!");
+        }
+    }
+
+    // Alternative method to load real activities from your existing Firestore structure
+    private void loadRealActivitiesFromFirestore() {
+        Log.d(TAG, "Loading real activities from Firestore...");
+
+        // Clear existing items
+        activityItems.clear();
+
+        final AtomicInteger barangaysProcessed = new AtomicInteger(0);
+        final AtomicInteger totalActivitiesAdded = new AtomicInteger(0);
+
+        // Load recent subsidy requests as activities
+        db.collection("Barangays")
+                .limit(3) // Limit to recent barangays to avoid too many requests
                 .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && isAdded()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            String title = document.getString("title");
-                            String description = document.getString("description");
-                            String iconType = document.getString("iconType");
-                            String timestamp = document.getString("timestamp");
+                .addOnSuccessListener(barangaySnapshots -> {
+                    int totalBarangays = barangaySnapshots.size();
 
-                            ActivityItem item = new ActivityItem(title, description, iconType, timestamp);
-                            activityItems.add(item);
-                        }
-
-                        // Notify adapter of data change
-                        if (activityAdapter != null) {
-                            activityAdapter.notifyDataSetChanged();
-                        }
-                    } else {
-                        Log.d(TAG, "Error getting activities: ", task.getException());
+                    if (totalBarangays == 0) {
+                        Log.d(TAG, "No barangays found, using sample data");
+                        createSampleActivities();
+                        return;
                     }
+
+                    for (QueryDocumentSnapshot barangayDoc : barangaySnapshots) {
+                        String barangayId = barangayDoc.getId();
+                        String barangayName = barangayDoc.getString("name");
+
+                        // Get recent subsidy requests from this barangay
+                        db.collection("Barangays")
+                                .document(barangayId)
+                                .collection("SubsidyRequests")
+                                .orderBy("dateSubmitted", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                                .limit(2)
+                                .get()
+                                .addOnSuccessListener(subsidySnapshots -> {
+                                    for (QueryDocumentSnapshot subsidyDoc : subsidySnapshots) {
+                                        String farmerName = subsidyDoc.getString("farmerName");
+                                        String status = subsidyDoc.getString("status");
+                                        String subsidyType = subsidyDoc.getString("subsidyType");
+
+                                        String title = "Subsidy Request " + (status != null ? status : "Submitted");
+                                        String description = (farmerName != null ? farmerName : "A farmer") +
+                                                " requested " + (subsidyType != null ? subsidyType : "subsidy") +
+                                                " in " + (barangayName != null ? barangayName : barangayId);
+
+                                        String iconType = status != null ? status.toLowerCase() : "edit";
+
+                                        ActivityItem item = new ActivityItem(title, description, iconType, "Recently");
+                                        activityItems.add(item);
+                                        totalActivitiesAdded.incrementAndGet();
+                                    }
+
+                                    // Check if we've processed all barangays
+                                    if (barangaysProcessed.incrementAndGet() == totalBarangays) {
+                                        Log.d(TAG, "Finished loading activities. Total: " + totalActivitiesAdded.get());
+
+                                        // If no activities were found, add sample data
+                                        if (totalActivitiesAdded.get() == 0) {
+                                            Log.d(TAG, "No real activities found, using sample data");
+                                            createSampleActivities();
+                                        } else {
+                                            // Notify adapter after adding all items
+                                            if (activityAdapter != null && isAdded()) {
+                                                activityAdapter.notifyDataSetChanged();
+                                                Log.d(TAG, "Real activities loaded and adapter notified");
+                                            }
+                                        }
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Error loading subsidy requests for " + barangayId, e);
+
+                                    // Still increment processed count on failure
+                                    if (barangaysProcessed.incrementAndGet() == totalBarangays) {
+                                        if (totalActivitiesAdded.get() == 0) {
+                                            Log.d(TAG, "Failed to load real activities, using sample data");
+                                            createSampleActivities();
+                                        } else {
+                                            if (activityAdapter != null && isAdded()) {
+                                                activityAdapter.notifyDataSetChanged();
+                                            }
+                                        }
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error loading barangays for activities", e);
+                    // Fallback to sample data
+                    createSampleActivities();
                 });
+    }
+
+    // Add this method to help with debugging
+    private void debugRecyclerView() {
+        Log.d(TAG, "=== RecyclerView Debug Info ===");
+        Log.d(TAG, "RecyclerView is null: " + (activityRecyclerView == null));
+        Log.d(TAG, "Adapter is null: " + (activityAdapter == null));
+        Log.d(TAG, "Activity items size: " + (activityItems != null ? activityItems.size() : "null"));
+
+        if (activityRecyclerView != null) {
+            Log.d(TAG, "RecyclerView visibility: " + activityRecyclerView.getVisibility());
+            Log.d(TAG, "RecyclerView height: " + activityRecyclerView.getHeight());
+            Log.d(TAG, "RecyclerView width: " + activityRecyclerView.getWidth());
+        }
+
+        if (activityAdapter != null) {
+            Log.d(TAG, "Adapter item count: " + activityAdapter.getItemCount());
+        }
+        Log.d(TAG, "=== End Debug Info ===");
     }
 
     @Override

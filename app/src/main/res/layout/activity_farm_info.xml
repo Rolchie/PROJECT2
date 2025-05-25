@@ -228,7 +228,7 @@
                             android:textColor="@android:color/black" />
                     </LinearLayout>
 
-                    <!-- Barangay -->
+                    <!-- Barangay - CHANGED FROM SPINNER TO TEXTVIEW -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -253,22 +253,21 @@
                             android:src="@drawable/baseline_location_on_24"
                             app:tint="@color/black" />
 
-                        <androidx.appcompat.widget.AppCompatSpinner
-                            android:id="@+id/spinner_barangay_crop"
+                        <!-- REPLACED SPINNER WITH TEXTVIEW -->
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tv_barangay_crop"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@null"
                             android:padding="12dp"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:hint="Barangay (Auto-assigned)"
+                            android:textColorHint="@color/dark_gray"
+                            android:enabled="false" />
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="12dp"
-                            android:contentDescription="Dropdown icon"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
-                            app:tint="@color/ButtonGreen" />
+
                     </LinearLayout>
 
                     <!-- Street Name -->
@@ -532,7 +531,7 @@
                             android:textColor="@android:color/black" />
                     </LinearLayout>
 
-                    <!-- Barangay -->
+                    <!-- Barangay - CHANGED FROM SPINNER TO TEXTVIEW -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -557,22 +556,28 @@
                             android:contentDescription="Barangay icon"
                             app:tint="@color/black" />
 
-                        <androidx.appcompat.widget.AppCompatSpinner
-                            android:id="@+id/spinner_barangay_livestock"
+                        <!-- REPLACED SPINNER WITH TEXTVIEW -->
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tv_barangay_livestock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@null"
                             android:padding="12dp"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:hint="Barangay (Auto-assigned)"
+                            android:textColorHint="@color/dark_gray"
+                            android:enabled="false" />
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
                             android:layout_marginEnd="12dp"
-                            android:contentDescription="Dropdown icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:contentDescription="Auto-assigned icon"
+                            android:src="@drawable/baseline_lock_24"
+                            app:tint="@color/dark_gray" />
+
                     </LinearLayout>
 
                     <!-- Street Name -->
@@ -790,7 +795,7 @@
                             android:textColor="@android:color/black" />
                     </LinearLayout>
 
-                    <!-- Barangay -->
+                    <!-- Barangay - CHANGED FROM SPINNER TO TEXTVIEW -->
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -815,22 +820,28 @@
                             android:contentDescription="Barangay icon"
                             app:tint="@color/black" />
 
-                        <androidx.appcompat.widget.AppCompatSpinner
-                            android:id="@+id/spinner_barangay_mixed"
+                        <!-- REPLACED SPINNER WITH TEXTVIEW -->
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tv_barangay_mixed"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@null"
                             android:padding="12dp"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:textColor="@android:color/black"
+                            android:hint="Barangay (Auto-assigned)"
+                            android:textColorHint="@color/dark_gray"
+                            android:enabled="false" />
 
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_arrow_drop_down_24"
                             android:layout_marginEnd="12dp"
-                            android:contentDescription="Dropdown icon"
-                            app:tint="@color/ButtonGreen" />
+                            android:contentDescription="Auto-assigned icon"
+                            android:src="@drawable/baseline_lock_24"
+                            app:tint="@color/dark_gray" />
+
                     </LinearLayout>
 
                     <!-- Street Name -->

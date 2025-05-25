@@ -44,6 +44,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.maramagagriculturalaid.app.R;
 import com.maramagagriculturalaid.app.SuccessActivities.SuccessSubsidyApplication;
+import com.maramagagriculturalaid.app.ActivityLogger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -189,7 +190,7 @@ public class SubsidyRequest extends AppCompatActivity {
         public View getDropDownView(int position, View convertView, ViewGroup parent) {
             View view = super.getDropDownView(position, convertView, parent);
             TextView textView = (TextView) view;
-            textView.setTextColor(Color.WHITE);
+            textView.setTextColor(Color.BLACK);
 
             // Make the first item (prompt) appear grayed out in dropdown
             if (position == 0) {
@@ -215,10 +216,10 @@ public class SubsidyRequest extends AppCompatActivity {
             fetchFarmerData(farmerId);
         });
 
+        // TEMPORARILY DISABLED: File upload functionality
         btnChooseFile.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("*/*");
-            startActivityForResult(intent, FILE_PICK_REQUEST_CODE);
+            Toast.makeText(this, "File upload is temporarily disabled. You can submit without a file.", Toast.LENGTH_LONG).show();
+
         });
 
         btnSubmit.setOnClickListener(v -> {
@@ -522,13 +523,10 @@ public class SubsidyRequest extends AppCompatActivity {
             }
         }
 
-        // Check if file is selected (required)
-        if (selectedFileUri == null) {
-            Toast.makeText(this, "Please select a file", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+        // REMOVED: File selection requirement - now optional
+        // File upload is temporarily disabled, so no file validation needed
 
-        // Check file size if a file is selected
+        // Check file size if a file is selected (optional validation)
         if (selectedFileUri != null) {
             try {
                 android.database.Cursor cursor = getContentResolver().query(selectedFileUri, null, null, null, null);
@@ -896,6 +894,9 @@ public class SubsidyRequest extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        // TEMPORARILY DISABLED: File upload handling
+        // Uncomment below to re-enable file upload
+        /*
         if (requestCode == FILE_PICK_REQUEST_CODE && resultCode == RESULT_OK) {
             if (data != null) {
                 selectedFileUri = data.getData();
@@ -904,6 +905,7 @@ public class SubsidyRequest extends AppCompatActivity {
                 }
             }
         }
+        */
     }
 
     private String getFileName(Uri uri) {
@@ -967,15 +969,18 @@ public class SubsidyRequest extends AppCompatActivity {
             subsidyRequest.put("fertilizerType", spinnerFertilizersType.getSelectedItem().toString());
         }
 
-        // Handle file upload if a file is selected
-        if (selectedFileUri != null) {
-            uploadFileToFirebaseAndSubmit(subsidyRequest);
-        } else {
-            // This shouldn't happen due to validation, but handle it just in case
-            submitToFirestore(subsidyRequest, null);
-        }
+        // MODIFIED: File upload is temporarily disabled
+        // Submit directly to Firestore without file upload
+        Log.d(TAG, "File upload temporarily disabled - submitting without file attachment");
+        subsidyRequest.put("fileUploadStatus", "disabled");
+        subsidyRequest.put("supportingDocumentUrl", "");
+        subsidyRequest.put("supportingDocumentName", "No file attached (upload disabled)");
+
+        submitToFirestore(subsidyRequest, null);
     }
 
+    // TEMPORARILY DISABLED: File upload method
+    /*
     private void uploadFileToFirebaseAndSubmit(Map<String, Object> subsidyRequest) {
         // Show loading state
         btnSubmit.setEnabled(false);
@@ -1050,6 +1055,7 @@ public class SubsidyRequest extends AppCompatActivity {
             });
         }
     }
+    */
 
     private void resetSubmitButton() {
         btnSubmit.setEnabled(true);
@@ -1067,11 +1073,7 @@ public class SubsidyRequest extends AppCompatActivity {
                 .add(subsidyRequest)
                 .addOnSuccessListener(documentReference -> {
                     // Success - subsidy request submitted
-                    if (fileName != null) {
-                        Log.d(TAG, "Subsidy request with file submitted with ID: " + documentReference.getId());
-                    } else {
-                        Log.d(TAG, "Subsidy request submitted with ID: " + documentReference.getId());
-                    }
+                    Log.d(TAG, "Subsidy request submitted with ID: " + documentReference.getId());
 
                     // Store the request ID in the document for easier reference
                     db.collection("Barangays").document(selectedBarangay)
@@ -1083,6 +1085,19 @@ public class SubsidyRequest extends AppCompatActivity {
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error updating request ID", e);
                             });
+
+                    // Log the subsidy application activity using ActivityLogger
+                    String farmerName = subsidyRequest.get("farmerName").toString();
+                    String supportType = subsidyRequest.get("supportType").toString();
+
+                    // Create description with farmer name and support type
+                    String description = farmerName;
+                    if (supportType != null && !supportType.isEmpty()) {
+                        description += " - " + supportType;
+                    }
+
+                    Log.d(TAG, "Logging subsidy application activity for: " + farmerName + " in " + selectedBarangay);
+                    ActivityLogger.logSubsidyAdded(selectedBarangay, farmerName, supportType);
 
                     // Navigate to success activity
                     Intent successIntent = new Intent(SubsidyRequest.this, SuccessSubsidyApplication.class);
@@ -1136,7 +1151,7 @@ public class SubsidyRequest extends AppCompatActivity {
 
         // Reset file selection
         selectedFileUri = null;
-        btnChooseFile.setText("Choose Supporting Document");
+        btnChooseFile.setText("Choose Supporting Document (Temporarily Disabled)");
 
         // Reset status
         tvSearchStatus.setVisibility(View.GONE);

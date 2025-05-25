@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/BackgroundGreen"
-    tools:context=".SuccessActivities.SuccessedAddFarmer">
+    tools:context=".SuccessActivities.SuccessSubsidyApplication">
 
     <!-- Title at the top on green background -->
     <TextView
@@ -58,39 +58,6 @@
                 android:paddingTop="32dp"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Step 3 of 3"
-                        android:textColor="@android:color/black"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Complete"
-                        android:textColor="@color/ButtonGreen"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <ProgressBar
-                    android:id="@+id/step_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:progress="100"
-                    android:progressBackgroundTint="#E0E0E0"
-                    android:progressTint="@color/ButtonGreen" />
             </LinearLayout>
 
             <!-- Success Message -->
@@ -102,7 +69,7 @@
                 android:layout_marginTop="40dp"
                 android:layout_marginEnd="32dp"
                 android:gravity="center"
-                android:text="Farmer's information saved successfully!"
+                android:text="Subsidy Application Approved!"
                 android:textColor="@android:color/black"
                 android:textSize="24sp"
                 android:textStyle="bold"
@@ -119,7 +86,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="32dp"
                 android:gravity="center"
-                android:text="Farmer Successfully Registered!"
+                android:text="The subsidy application has been successfully approved and processed"
                 android:textColor="#666666"
                 android:textSize="16sp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -158,26 +125,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/iv_success_icon" />
-
-            <!-- Add Another Farmer Button (Optional) -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btn_add_another"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="64dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="64dp"
-                android:background="@drawable/getstartedbkg"
-                android:backgroundTint="#FFFFFF"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:text="Add another farmer"
-                android:textAllCaps="false"
-                android:textColor="@color/ButtonGreen"
-                android:textSize="16sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/btn_back_home" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

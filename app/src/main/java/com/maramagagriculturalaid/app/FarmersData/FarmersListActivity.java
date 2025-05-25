@@ -6,16 +6,19 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.PopupMenu;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -31,16 +34,20 @@ public class FarmersListActivity extends AppCompatActivity {
 
     private static final String TAG = "FarmersListActivity";
 
-    // UI Components
-    private ImageButton buttonBack;
-    private TextView titleTextView;
-    private TextView farmersCountText;
-    private TextView textViewSortBy;
-    private ImageButton buttonSort;
-    private AppCompatEditText editTextSearch;
-    private RecyclerView recyclerViewFarmers;
-    private TextView emptyStateText;
-    private View progressBar;
+    // UI Components - Updated for new layout
+    private ImageButton btnBack;
+    private TextView tvFarmersTitle;
+    private TextView tvFarmersCount;
+    private EditText etSearch;
+    private AppCompatButton btnSearch;
+    private AppCompatButton btnSortById;
+    private AppCompatButton btnSortByName;
+    private AppCompatButton btnFilter;
+    private RecyclerView rvFarmersList;
+    private FrameLayout loadingView;
+    private LinearLayout emptyStateView;
+    private AppCompatButton btnAddFarmerEmpty;
+    private FloatingActionButton fabAddFarmer;
 
     // Data
     private List<Farmer> farmersList;
@@ -82,15 +89,28 @@ public class FarmersListActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
-        buttonBack = findViewById(R.id.buttonBack);
-        titleTextView = findViewById(R.id.titleTextView);
-        farmersCountText = findViewById(R.id.farmersCountText);
-        textViewSortBy = findViewById(R.id.textViewSortBy);
-        buttonSort = findViewById(R.id.buttonSort);
-        editTextSearch = findViewById(R.id.editTextSearch);
-        recyclerViewFarmers = findViewById(R.id.recyclerViewFarmers);
-        emptyStateText = findViewById(R.id.emptyStateText);
-        progressBar = findViewById(R.id.progressBar);
+        // Header components
+        btnBack = findViewById(R.id.btnBack);
+        tvFarmersTitle = findViewById(R.id.tvFarmersTitle);
+        tvFarmersCount = findViewById(R.id.tvFarmersCount);
+
+        // Search components
+        etSearch = findViewById(R.id.etSearch);
+        btnSearch = findViewById(R.id.btnSearch);
+
+        // Sort and filter buttons
+        btnSortById = findViewById(R.id.btnSortById);
+        btnSortByName = findViewById(R.id.btnSortByName);
+
+        // List components
+        rvFarmersList = findViewById(R.id.rvFarmersList);
+        loadingView = findViewById(R.id.loadingView);
+        emptyStateView = findViewById(R.id.emptyStateView);
+        btnAddFarmerEmpty = findViewById(R.id.btnAddFarmerEmpty);
+        fabAddFarmer = findViewById(R.id.fabAddFarmer);
+
+        // Set initial button states
+        updateSortButtonStates();
     }
 
     private void setupRecyclerView() {
@@ -99,43 +119,85 @@ public class FarmersListActivity extends AppCompatActivity {
 
         // Create the adapter with click listener to navigate to details
         farmerAdapter = new FarmersAdapter(farmersList, farmer -> {
-            // This is the click listener implementation
-            // When a farmer is clicked, create an intent to FarmersDetailsActivity
+            // Navigate to farmer details
             Intent intent = new Intent(FarmersListActivity.this, FarmersDetailsActivity.class);
-
-            // Pass the necessary data to the details activity
             intent.putExtra("documentId", farmer.getDocumentId());
             intent.putExtra("barangayId", farmer.getBarangayId());
             intent.putExtra("farmerId", farmer.getId());
-
-            // Navigate to the details activity
             startActivity(intent);
 
-            // Log the navigation for debugging purposes
             Log.d(TAG, "Navigating to details for farmer: " + farmer.getFullName() +
                     " (ID: " + farmer.getId() + ", Doc ID: " + farmer.getDocumentId() + ")");
         });
 
-        recyclerViewFarmers.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewFarmers.setAdapter(farmerAdapter);
+        rvFarmersList.setLayoutManager(new LinearLayoutManager(this));
+        rvFarmersList.setAdapter(farmerAdapter);
     }
 
     private void setupListeners() {
-        buttonBack.setOnClickListener(v -> finish());
+        // Back button
+        btnBack.setOnClickListener(v -> finish());
 
-        View.OnClickListener sortClickListener = v -> showSortOptions();
-        buttonSort.setOnClickListener(sortClickListener);
-        textViewSortBy.setOnClickListener(sortClickListener);
+        // Search functionality
+        btnSearch.setOnClickListener(v -> performSearch());
 
-        editTextSearch.addTextChangedListener(new TextWatcher() {
+        etSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Real-time search as user types
                 filterFarmersList(s.toString());
             }
         });
+
+        // Sort buttons
+        btnSortById.setOnClickListener(v -> {
+            currentSortOption = SortOption.ID;
+            updateSortButtonStates();
+            sortFarmersList();
+        });
+
+        btnSortByName.setOnClickListener(v -> {
+            currentSortOption = SortOption.NAME;
+            updateSortButtonStates();
+            sortFarmersList();
+        });
+
+        // Add farmer buttons
+        fabAddFarmer.setOnClickListener(v -> navigateToAddFarmer());
+        btnAddFarmerEmpty.setOnClickListener(v -> navigateToAddFarmer());
+    }
+
+    private void navigateToAddFarmer() {
+        Intent intent = new Intent(this, AddFarmerAcitivity.class);
+        startActivity(intent);
+    }
+
+    private void updateSortButtonStates() {
+        // Reset all button backgrounds to default
+        btnSortById.setBackgroundResource(R.drawable.buttons);
+        btnSortByName.setBackgroundResource(R.drawable.buttons);
+
+        // Highlight the active sort button
+        switch (currentSortOption) {
+            case ID:
+                btnSortById.setBackgroundResource(R.drawable.buttons); // You might want a different drawable for selected state
+                break;
+            case NAME:
+                btnSortByName.setBackgroundResource(R.drawable.buttons); // You might want a different drawable for selected state
+                break;
+        }
+    }
+
+    private void performSearch() {
+        String query = etSearch.getText().toString().trim();
+        if (query.isEmpty()) {
+            Toast.makeText(this, "Please enter a search term", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        filterFarmersList(query);
     }
 
     private void checkUserRoleAndLoadData() {
@@ -157,10 +219,12 @@ public class FarmersListActivity extends AppCompatActivity {
                             String role = document.getString("Role");
                             if ("Municipal".equals(role)) {
                                 isMunicipalUser = true;
+                                tvFarmersTitle.setText("All Farmers");
                                 loadAllFarmers();
                             } else if ("Barangay".equals(role)) {
                                 userBarangayId = document.getString("Barangay");
                                 if (userBarangayId != null && !userBarangayId.isEmpty()) {
+                                    tvFarmersTitle.setText("Farmers in " + userBarangayId);
                                     loadBarangayFarmers(userBarangayId);
                                 } else {
                                     showLoading(false);
@@ -206,8 +270,12 @@ public class FarmersListActivity extends AppCompatActivity {
 
                         for (QueryDocumentSnapshot barangayDoc : barangaysTask.getResult()) {
                             String barangayId = barangayDoc.getId();
-                            String barangayName = barangayDoc.getString("Name");
+                            String barangayName = barangayDoc.getString("name");
+                            if (barangayName == null) {
+                                barangayName = barangayId; // Fallback to ID if name is null
+                            }
 
+                            String finalBarangayName = barangayName;
                             db.collection("Barangays").document(barangayId)
                                     .collection("Farmers").get()
                                     .addOnCompleteListener(farmersTask -> {
@@ -215,55 +283,7 @@ public class FarmersListActivity extends AppCompatActivity {
 
                                         if (farmersTask.isSuccessful()) {
                                             for (QueryDocumentSnapshot farmerDoc : farmersTask.getResult()) {
-                                                // Manually create and populate a Farmer object
-                                                Farmer farmer = new Farmer();
-                                                farmer.setDocumentId(farmerDoc.getId());
-                                                farmer.setId(farmerDoc.getString("id"));
-                                                farmer.setFirstName(farmerDoc.getString("firstName"));
-                                                farmer.setLastName(farmerDoc.getString("lastName"));
-                                                farmer.setMiddleInitial(farmerDoc.getString("middleInitial"));
-                                                farmer.setPhoneNumber(farmerDoc.getString("phoneNumber"));
-                                                // Handle date values safely
-                                                if (farmerDoc.contains("birthday")) {
-                                                    Object birthdayObj = farmerDoc.get("birthday");
-                                                    if (birthdayObj instanceof com.google.firebase.Timestamp) {
-                                                        farmer.setBirthday(((com.google.firebase.Timestamp) birthdayObj).toDate());
-                                                    } else if (birthdayObj instanceof Date) {
-                                                        farmer.setBirthday((Date) birthdayObj);
-                                                    }
-                                                }
-                                                farmer.setAddress(farmerDoc.getString("address"));
-                                                farmer.setFarmType(farmerDoc.getString("farmType"));
-                                                farmer.setLocation(farmerDoc.getString("location"));
-                                                farmer.setExactLocation(farmerDoc.getString("exactLocation"));
-                                                farmer.setCropsGrown(farmerDoc.getString("cropsGrown"));
-
-                                                // Handle numeric values safely
-                                                if (farmerDoc.contains("lotSize")) {
-                                                    Object lotSizeObj = farmerDoc.get("lotSize");
-                                                    if (lotSizeObj instanceof Double) {
-                                                        farmer.setLotSize((Double) lotSizeObj);
-                                                    } else if (lotSizeObj instanceof Long) {
-                                                        farmer.setLotSize(((Long) lotSizeObj).doubleValue());
-                                                    }
-                                                }
-
-                                                farmer.setLivestock(farmerDoc.getString("livestock"));
-
-                                                // Handle integer values safely
-                                                if (farmerDoc.contains("livestockCount")) {
-                                                    Object countObj = farmerDoc.get("livestockCount");
-                                                    if (countObj instanceof Long) {
-                                                        farmer.setLivestockCount(((Long) countObj).intValue());
-                                                    } else if (countObj instanceof Integer) {
-                                                        farmer.setLivestockCount((Integer) countObj);
-                                                    }
-                                                }
-
-                                                farmer.setDateAdded(farmerDoc.getString("dateAdded"));
-                                                farmer.setDocumentId(farmerDoc.getId());
-                                                farmer.setBarangayId(barangayId);
-                                                farmer.setBarangay(barangayName);
+                                                Farmer farmer = createFarmerFromDocument(farmerDoc, barangayId, finalBarangayName);
                                                 farmersList.add(farmer);
                                                 originalFarmersList.add(farmer);
                                             }
@@ -295,7 +315,12 @@ public class FarmersListActivity extends AppCompatActivity {
         db.collection("Barangays").document(barangayId).get()
                 .addOnCompleteListener(barangayTask -> {
                     if (barangayTask.isSuccessful() && barangayTask.getResult() != null) {
-                        String barangayName = barangayTask.getResult().getString("Name");
+                        String barangayName = barangayTask.getResult().getString("name");
+                        if (barangayName == null) {
+                            barangayName = barangayId; // Fallback to ID if name is null
+                        }
+
+                        final String finalBarangayName = barangayName;
 
                         db.collection("Barangays").document(barangayId)
                                 .collection("Farmers").get()
@@ -304,55 +329,7 @@ public class FarmersListActivity extends AppCompatActivity {
 
                                     if (task.isSuccessful()) {
                                         for (QueryDocumentSnapshot document : task.getResult()) {
-                                            // Manually create and populate a Farmer object
-                                            Farmer farmer = new Farmer();
-                                            farmer.setDocumentId(document.getId());
-                                            farmer.setId(document.getString("farmerId"));
-                                            farmer.setFirstName(document.getString("firstName"));
-                                            farmer.setLastName(document.getString("lastName"));
-                                            farmer.setMiddleInitial(document.getString("middleInitial"));
-                                            farmer.setPhoneNumber(document.getString("phoneNumber"));
-                                            // Handle date values safely
-                                            if (document.contains("birthday")) {
-                                                Object birthdayObj = document.get("birthday");
-                                                if (birthdayObj instanceof com.google.firebase.Timestamp) {
-                                                    farmer.setBirthday(((com.google.firebase.Timestamp) birthdayObj).toDate());
-                                                } else if (birthdayObj instanceof Date) {
-                                                    farmer.setBirthday((Date) birthdayObj);
-                                                }
-                                            }
-                                            farmer.setAddress(document.getString("address"));
-                                            farmer.setFarmType(document.getString("farmType"));
-                                            farmer.setLocation(document.getString("location"));
-                                            farmer.setExactLocation(document.getString("exactLocation"));
-                                            farmer.setCropsGrown(document.getString("cropsGrown"));
-
-                                            // Handle numeric values safely
-                                            if (document.contains("lotSize")) {
-                                                Object lotSizeObj = document.get("lotSize");
-                                                if (lotSizeObj instanceof Double) {
-                                                    farmer.setLotSize((Double) lotSizeObj);
-                                                } else if (lotSizeObj instanceof Long) {
-                                                    farmer.setLotSize(((Long) lotSizeObj).doubleValue());
-                                                }
-                                            }
-
-                                            farmer.setLivestock(document.getString("livestock"));
-
-                                            // Handle integer values safely
-                                            if (document.contains("livestockCount")) {
-                                                Object countObj = document.get("livestockCount");
-                                                if (countObj instanceof Long) {
-                                                    farmer.setLivestockCount(((Long) countObj).intValue());
-                                                } else if (countObj instanceof Integer) {
-                                                    farmer.setLivestockCount((Integer) countObj);
-                                                }
-                                            }
-
-                                            farmer.setDateAdded(document.getString("dateAdded"));
-                                            farmer.setDocumentId(document.getId());
-                                            farmer.setBarangayId(barangayId);
-                                            farmer.setBarangay(barangayName);
+                                            Farmer farmer = createFarmerFromDocument(document, barangayId, finalBarangayName);
                                             farmersList.add(farmer);
                                             originalFarmersList.add(farmer);
                                         }
@@ -373,33 +350,58 @@ public class FarmersListActivity extends AppCompatActivity {
                 });
     }
 
-    private void showSortOptions() {
-        PopupMenu popupMenu = new PopupMenu(this, buttonSort);
-        popupMenu.getMenu().add("ID");
-        popupMenu.getMenu().add("Name");
-        popupMenu.getMenu().add("Date Added");
+    private Farmer createFarmerFromDocument(QueryDocumentSnapshot document, String barangayId, String barangayName) {
+        Farmer farmer = new Farmer();
+        farmer.setDocumentId(document.getId());
+        farmer.setId(document.getString("farmerId"));
+        farmer.setFirstName(document.getString("firstName"));
+        farmer.setLastName(document.getString("lastName"));
+        farmer.setMiddleInitial(document.getString("middleInitial"));
+        farmer.setPhoneNumber(document.getString("phoneNumber"));
 
-        popupMenu.setOnMenuItemClickListener(item -> {
-            String sortBy = item.getTitle().toString();
-            textViewSortBy.setText(sortBy);
-
-            switch (sortBy) {
-                case "ID":
-                    currentSortOption = SortOption.ID;
-                    break;
-                case "Name":
-                    currentSortOption = SortOption.NAME;
-                    break;
-                case "Date Added":
-                    currentSortOption = SortOption.DATE_ADDED;
-                    break;
+        // Handle date values safely
+        if (document.contains("birthday")) {
+            Object birthdayObj = document.get("birthday");
+            if (birthdayObj instanceof com.google.firebase.Timestamp) {
+                farmer.setBirthday(((com.google.firebase.Timestamp) birthdayObj).toDate());
+            } else if (birthdayObj instanceof Date) {
+                farmer.setBirthday((Date) birthdayObj);
             }
+        }
 
-            sortFarmersList();
-            return true;
-        });
+        farmer.setAddress(document.getString("address"));
+        farmer.setFarmType(document.getString("farmType"));
+        farmer.setLocation(document.getString("location"));
+        farmer.setExactLocation(document.getString("exactLocation"));
+        farmer.setCropsGrown(document.getString("cropsGrown"));
 
-        popupMenu.show();
+        // Handle numeric values safely
+        if (document.contains("lotSize")) {
+            Object lotSizeObj = document.get("lotSize");
+            if (lotSizeObj instanceof Double) {
+                farmer.setLotSize((Double) lotSizeObj);
+            } else if (lotSizeObj instanceof Long) {
+                farmer.setLotSize(((Long) lotSizeObj).doubleValue());
+            }
+        }
+
+        farmer.setLivestock(document.getString("livestock"));
+
+        // Handle integer values safely
+        if (document.contains("livestockCount")) {
+            Object countObj = document.get("livestockCount");
+            if (countObj instanceof Long) {
+                farmer.setLivestockCount(((Long) countObj).intValue());
+            } else if (countObj instanceof Integer) {
+                farmer.setLivestockCount((Integer) countObj);
+            }
+        }
+
+        farmer.setDateAdded(document.getString("dateAdded"));
+        farmer.setBarangayId(barangayId);
+        farmer.setBarangay(barangayName);
+
+        return farmer;
     }
 
     private void filterFarmersList(String query) {
@@ -409,11 +411,18 @@ public class FarmersListActivity extends AppCompatActivity {
             farmerAdapter.notifyDataSetChanged();
         } else {
             List<Farmer> filteredList = new ArrayList<>();
+            String lowerQuery = query.toLowerCase();
+
             for (Farmer farmer : originalFarmersList) {
                 String farmerId = farmer.getId() != null ? farmer.getId().toLowerCase() : "";
                 String fullName = farmer.getFullName() != null ? farmer.getFullName().toLowerCase() : "";
+                String barangay = farmer.getBarangay() != null ? farmer.getBarangay().toLowerCase() : "";
+                String phoneNumber = farmer.getPhoneNumber() != null ? farmer.getPhoneNumber().toLowerCase() : "";
 
-                if (farmerId.contains(query.toLowerCase()) || fullName.contains(query.toLowerCase())) {
+                if (farmerId.contains(lowerQuery) ||
+                        fullName.contains(lowerQuery) ||
+                        barangay.contains(lowerQuery) ||
+                        phoneNumber.contains(lowerQuery)) {
                     filteredList.add(farmer);
                 }
             }
@@ -454,22 +463,38 @@ public class FarmersListActivity extends AppCompatActivity {
 
     private void updateFarmersCount() {
         int count = farmerAdapter.getItemCount();
-        farmersCountText.setText(String.format("Total Farmers: %d", count));
+        tvFarmersCount.setText(count + " Farmers");
     }
 
     private void checkEmptyState() {
         if (farmerAdapter.getItemCount() == 0) {
-            recyclerViewFarmers.setVisibility(View.GONE);
-            emptyStateText.setVisibility(View.VISIBLE);
+            rvFarmersList.setVisibility(View.GONE);
+            emptyStateView.setVisibility(View.VISIBLE);
         } else {
-            recyclerViewFarmers.setVisibility(View.VISIBLE);
-            emptyStateText.setVisibility(View.GONE);
+            rvFarmersList.setVisibility(View.VISIBLE);
+            emptyStateView.setVisibility(View.GONE);
         }
     }
 
     private void showLoading(boolean isLoading) {
-        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        recyclerViewFarmers.setVisibility(isLoading ? View.GONE : View.VISIBLE);
-        emptyStateText.setVisibility(isLoading ? View.GONE : emptyStateText.getVisibility());
+        if (isLoading) {
+            loadingView.setVisibility(View.VISIBLE);
+            rvFarmersList.setVisibility(View.GONE);
+            emptyStateView.setVisibility(View.GONE);
+        } else {
+            loadingView.setVisibility(View.GONE);
+            // RecyclerView and empty state visibility will be handled by checkEmptyState()
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh data when returning to this activity
+        if (isMunicipalUser) {
+            loadAllFarmers();
+        } else if (userBarangayId != null) {
+            loadBarangayFarmers(userBarangayId);
+        }
     }
 }

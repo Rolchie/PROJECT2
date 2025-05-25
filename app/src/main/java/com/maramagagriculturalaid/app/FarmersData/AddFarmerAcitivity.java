@@ -5,6 +5,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -14,15 +15,24 @@ import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.maramagagriculturalaid.app.R;
+import com.maramagagriculturalaid.app.ActivityLogger;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class AddFarmerAcitivity extends AppCompatActivity {
+
+    private static final String TAG = "AddFarmerActivity";
 
     private EditText etFarmerId, etPhone, etFirstName, etLastName, etMiddleInitial;
     private TextView tvBirthday;
@@ -33,18 +43,45 @@ public class AddFarmerAcitivity extends AppCompatActivity {
     private Calendar calendar;
     private SimpleDateFormat dateFormatter;
     private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+    private String userBarangay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_farmer_acitivity); // Ensure this XML is named correctly
+        setContentView(R.layout.activity_add_farmer_acitivity);
 
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
         calendar = Calendar.getInstance();
         dateFormatter = new SimpleDateFormat("MMMM dd, yyyy", Locale.US);
 
         initViews();
         setupClickListeners();
+        loadUserBarangay();
+    }
+
+    private void loadUserBarangay() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            DocumentReference docRef = db.collection("Users").document(userId);
+            docRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        userBarangay = document.getString("Barangay");
+                        Log.d(TAG, "User barangay loaded: " + userBarangay);
+                    } else {
+                        Log.e(TAG, "User document not found");
+                        Toast.makeText(this, "User information not found", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Log.e(TAG, "Failed to load user data", task.getException());
+                    Toast.makeText(this, "Failed to load user info", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void initViews() {
@@ -122,7 +159,7 @@ public class AddFarmerAcitivity extends AppCompatActivity {
         Calendar minAgeCalendar = Calendar.getInstance();
         minAgeCalendar.add(Calendar.YEAR, -15);
         datePickerDialog.getDatePicker().setMaxDate(minAgeCalendar.getTimeInMillis());
-        datePickerDialog.getDatePicker().setMinDate(0); // Optional: prevent selecting before 1970
+        datePickerDialog.getDatePicker().setMinDate(0);
 
         datePickerDialog.show();
     }
@@ -331,7 +368,6 @@ public class AddFarmerAcitivity extends AppCompatActivity {
         }
     }
 
-
     private void showError(String message, boolean highlightIdField) {
         if (progressBar != null) progressBar.setVisibility(View.GONE);
         btnNext.setEnabled(true);
@@ -347,6 +383,76 @@ public class AddFarmerAcitivity extends AppCompatActivity {
         intent.putExtra("lastName", etLastName.getText().toString().trim());
         intent.putExtra("middleInitial", etMiddleInitial.getText().toString().trim());
         intent.putExtra("birthday", tvBirthday.getText().toString().trim());
+        intent.putExtra("userBarangay", userBarangay); // Pass barangay to next activity
         startActivity(intent);
+    }
+
+    // Method to save farmer data (call this in the final step of farmer creation)
+    public void saveFarmerToDatabase(Map<String, Object> farmerData, String barangay, String farmerName) {
+        if (barangay == null || barangay.isEmpty()) {
+            Log.e(TAG, "Cannot save farmer - barangay is null or empty");
+            Toast.makeText(this, "Error: Barangay information missing", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Add timestamp
+        farmerData.put("createdAt", System.currentTimeMillis());
+        farmerData.put("lastUpdated", System.currentTimeMillis());
+
+        // Save to Firestore
+        db.collection("Barangays")
+                .document(barangay)
+                .collection("Farmers")
+                .add(farmerData)
+                .addOnSuccessListener(documentReference -> {
+                    Log.d(TAG, "Farmer added successfully with ID: " + documentReference.getId());
+
+                    // Log the activity using ActivityLogger
+                    ActivityLogger.logFarmerAdded(barangay, farmerName);
+
+                    Toast.makeText(this, "Farmer added successfully!", Toast.LENGTH_SHORT).show();
+
+                    // Navigate back to home or farmers list
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error adding farmer", e);
+                    Toast.makeText(this, "Failed to add farmer: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    // Alternative method if you're using document ID as farmer name
+    public void saveFarmerWithDocumentId(Map<String, Object> farmerData, String barangay, String farmerName, String documentId) {
+        if (barangay == null || barangay.isEmpty()) {
+            Log.e(TAG, "Cannot save farmer - barangay is null or empty");
+            Toast.makeText(this, "Error: Barangay information missing", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Add timestamp
+        farmerData.put("createdAt", System.currentTimeMillis());
+        farmerData.put("lastUpdated", System.currentTimeMillis());
+
+        // Save to Firestore with specific document ID
+        db.collection("Barangays")
+                .document(barangay)
+                .collection("Farmers")
+                .document(documentId)
+                .set(farmerData)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Farmer added successfully with document ID: " + documentId);
+
+                    // Log the activity using ActivityLogger
+                    ActivityLogger.logFarmerAdded(barangay, farmerName);
+
+                    Toast.makeText(this, "Farmer added successfully!", Toast.LENGTH_SHORT).show();
+
+                    // Navigate back to home or farmers list
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error adding farmer", e);
+                    Toast.makeText(this, "Failed to add farmer: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 }

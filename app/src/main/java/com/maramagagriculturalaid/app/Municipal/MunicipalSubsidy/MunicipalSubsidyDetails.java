@@ -5,6 +5,8 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
@@ -14,15 +16,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.maramagagriculturalaid.app.R;
+import com.maramagagriculturalaid.app.SuccessActivities.SuccessedApprovedSubsidy;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -34,6 +37,7 @@ import java.util.Map;
 public class MunicipalSubsidyDetails extends AppCompatActivity {
 
     private static final String TAG = "MunicipalSubsidyDetails";
+    private static final int NAVIGATION_DELAY = 1500; // 1.5 seconds delay
 
     private FirebaseFirestore db;
     private FirebaseStorage storage;
@@ -41,6 +45,10 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
     private String barangayName;
     private String currentStatus = "Pending";
     private ProgressDialog progressDialog;
+
+    // Navigation data
+    private String farmerName = "";
+    private String subsidyType = "";
 
     // UI Components
     private TextView tvStatus, tvDate, tvSubsidyType;
@@ -57,7 +65,7 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
 
     private LinearLayout fileItem;
     private TextView tvFileName;
-    private MaterialButton btnApprove, btnReject;
+    private AppCompatButton btnApprove, btnReject;
     private ImageButton btnBack, btnDownloadFile;
     private View noFilesView;
     private LinearLayout buttonContainer;
@@ -209,12 +217,9 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             Log.d(TAG, "=== SETTING UP CLICK LISTENERS ===");
 
             if (btnBack != null) {
-                btnBack.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Log.d(TAG, "Back button clicked");
-                        finish();
-                    }
+                btnBack.setOnClickListener(v -> {
+                    Log.d(TAG, "Back button clicked");
+                    finish();
                 });
                 Log.d(TAG, "Back button listener set");
             } else {
@@ -223,54 +228,34 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
 
             if (btnApprove != null) {
                 Log.d(TAG, "Setting approve button listener");
-                btnApprove.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Log.d(TAG, "APPROVE BUTTON CLICKED!");
-                        Toast.makeText(MunicipalSubsidyDetails.this, "Approve button clicked!", Toast.LENGTH_SHORT).show();
-                        confirmApproval();
+                btnApprove.setOnClickListener(v -> {
+                    Log.d(TAG, "APPROVE BUTTON CLICKED!");
+                    // Check if button should be clickable based on current status
+                    if (isButtonClickable()) {
+                        showApprovalDialog();
+                    } else {
+                        Log.w(TAG, "Approve button clicked but not in clickable state. Status: " + currentStatus);
+                        Toast.makeText(this, "This application has already been processed", Toast.LENGTH_SHORT).show();
                     }
                 });
                 Log.d(TAG, "Approve button listener set successfully");
-
-                // Test button immediately
-                btnApprove.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "Testing approve button state:");
-                        Log.d(TAG, "- Visibility: " + btnApprove.getVisibility());
-                        Log.d(TAG, "- Enabled: " + btnApprove.isEnabled());
-                        Log.d(TAG, "- Clickable: " + btnApprove.isClickable());
-                        Log.d(TAG, "- Has OnClickListener: " + btnApprove.hasOnClickListeners());
-                    }
-                });
             } else {
                 Log.e(TAG, "btnApprove is NULL! Cannot set click listener!");
             }
 
             if (btnReject != null) {
                 Log.d(TAG, "Setting reject button listener");
-                btnReject.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Log.d(TAG, "REJECT BUTTON CLICKED!");
-                        Toast.makeText(MunicipalSubsidyDetails.this, "Reject button clicked!", Toast.LENGTH_SHORT).show();
-                        confirmRejection();
+                btnReject.setOnClickListener(v -> {
+                    Log.d(TAG, "REJECT BUTTON CLICKED!");
+                    // Check if button should be clickable based on current status
+                    if (isButtonClickable()) {
+                        showRejectionDialog();
+                    } else {
+                        Log.w(TAG, "Reject button clicked but not in clickable state. Status: " + currentStatus);
+                        Toast.makeText(this, "This application has already been processed", Toast.LENGTH_SHORT).show();
                     }
                 });
                 Log.d(TAG, "Reject button listener set successfully");
-
-                // Test button immediately
-                btnReject.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "Testing reject button state:");
-                        Log.d(TAG, "- Visibility: " + btnReject.getVisibility());
-                        Log.d(TAG, "- Enabled: " + btnReject.isEnabled());
-                        Log.d(TAG, "- Clickable: " + btnReject.isClickable());
-                        Log.d(TAG, "- Has OnClickListener: " + btnReject.hasOnClickListeners());
-                    }
-                });
             } else {
                 Log.e(TAG, "btnReject is NULL! Cannot set click listener!");
             }
@@ -281,17 +266,32 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
         }
     }
 
-    private void confirmApproval() {
-        try {
-            Log.d(TAG, "confirmApproval() called");
+    /**
+     * Check if buttons should be clickable based on current status
+     */
+    private boolean isButtonClickable() {
+        if (currentStatus == null) {
+            return false;
+        }
+        String normalizedStatus = currentStatus.trim().toLowerCase(Locale.US);
+        boolean clickable = "pending".equals(normalizedStatus);
+        Log.d(TAG, "isButtonClickable() - Status: '" + normalizedStatus + "', Clickable: " + clickable);
+        return clickable;
+    }
 
+    /**
+     * Simple approval dialog
+     */
+    private void showApprovalDialog() {
+        try {
             new AlertDialog.Builder(this)
                     .setTitle("Approve Application")
-                    .setMessage("Are you sure you want to approve this subsidy application?")
+                    .setMessage("Are you sure you want to approve this subsidy application for " +
+                            (tvFarmerName != null ? tvFarmerName.getText().toString() : "this farmer") + "?")
                     .setPositiveButton("Approve", (dialog, which) -> {
                         Log.d(TAG, "User confirmed approval");
                         dialog.dismiss();
-                        processStatusUpdate("Approved");
+                        processStatusUpdate("Approved", "");
                     })
                     .setNegativeButton("Cancel", (dialog, which) -> {
                         Log.d(TAG, "User cancelled approval");
@@ -299,25 +299,24 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                     })
                     .setCancelable(true)
                     .show();
-
-            Log.d(TAG, "Approval dialog shown");
         } catch (Exception e) {
-            Log.e(TAG, "Error showing approval confirmation", e);
-            Toast.makeText(this, "Error showing confirmation dialog: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Error showing approval dialog", e);
         }
     }
 
-    private void confirmRejection() {
+    /**
+     * Simple rejection dialog
+     */
+    private void showRejectionDialog() {
         try {
-            Log.d(TAG, "confirmRejection() called");
-
             new AlertDialog.Builder(this)
                     .setTitle("Reject Application")
-                    .setMessage("Are you sure you want to reject this subsidy application?")
+                    .setMessage("Are you sure you want to reject this subsidy application for " +
+                            (tvFarmerName != null ? tvFarmerName.getText().toString() : "this farmer") + "?")
                     .setPositiveButton("Reject", (dialog, which) -> {
                         Log.d(TAG, "User confirmed rejection");
                         dialog.dismiss();
-                        processStatusUpdate("Rejected");
+                        processStatusUpdate("Rejected", "No reason provided");
                     })
                     .setNegativeButton("Cancel", (dialog, which) -> {
                         Log.d(TAG, "User cancelled rejection");
@@ -325,17 +324,17 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                     })
                     .setCancelable(true)
                     .show();
-
-            Log.d(TAG, "Rejection dialog shown");
         } catch (Exception e) {
-            Log.e(TAG, "Error showing rejection confirmation", e);
-            Toast.makeText(this, "Error showing confirmation dialog: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Error showing rejection dialog", e);
         }
     }
 
-    private void processStatusUpdate(String newStatus) {
+    /**
+     * Updated method to handle status updates with notes/reasons
+     */
+    private void processStatusUpdate(String newStatus, String notesOrReason) {
         try {
-            Log.d(TAG, "processStatusUpdate() called with status: " + newStatus);
+            Log.d(TAG, "processStatusUpdate() called with status: " + newStatus + ", notes/reason: " + notesOrReason);
 
             // Show loading dialog
             if (progressDialog != null) {
@@ -361,9 +360,13 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             if ("Approved".equals(newStatus)) {
                 updates.put("approvedAt", System.currentTimeMillis());
                 updates.put("processedBy", "Municipal Office");
+                if (!TextUtils.isEmpty(notesOrReason)) {
+                    updates.put("approvalNotes", notesOrReason);
+                }
             } else if ("Rejected".equals(newStatus)) {
                 updates.put("rejectedAt", System.currentTimeMillis());
                 updates.put("processedBy", "Municipal Office");
+                updates.put("rejectionReason", notesOrReason);
             }
 
             Log.d(TAG, "Update data prepared: " + updates.toString());
@@ -377,6 +380,13 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             setButtonsEnabled(true);
             Toast.makeText(this, "Error processing update: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    /**
+     * Overloaded method for backward compatibility
+     */
+    private void processStatusUpdate(String newStatus) {
+        processStatusUpdate(newStatus, "");
     }
 
     private void updateSubsidyStatus(Map<String, Object> updates, String newStatus) {
@@ -393,20 +403,14 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                         .collection("SubsidyRequests")
                         .document(subsidyId)
                         .update(updates)
-                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                            @Override
-                            public void onSuccess(Void aVoid) {
-                                Log.d(TAG, "Successfully updated status in barangay collection");
-                                handleStatusUpdateSuccess(newStatus);
-                            }
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Successfully updated status in barangay collection");
+                            handleStatusUpdateSuccess(newStatus);
                         })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "Failed to update in barangay collection: " + e.getMessage(), e);
-                                // Fallback to general collection
-                                updateInGeneralCollection(updates, newStatus);
-                            }
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Failed to update in barangay collection: " + e.getMessage(), e);
+                            // Fallback to general collection
+                            updateInGeneralCollection(updates, newStatus);
                         });
             } else {
                 // No barangay specified, try general collection
@@ -427,19 +431,13 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             db.collection("SubsidyRequests")
                     .document(subsidyId)
                     .update(updates)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            Log.d(TAG, "Successfully updated status in general collection");
-                            handleStatusUpdateSuccess(newStatus);
-                        }
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Successfully updated status in general collection");
+                        handleStatusUpdateSuccess(newStatus);
                     })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.e(TAG, "Failed to update in general collection: " + e.getMessage(), e);
-                            handleStatusUpdateFailure(e);
-                        }
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Failed to update in general collection: " + e.getMessage(), e);
+                        handleStatusUpdateFailure(e);
                     });
         } catch (Exception e) {
             Log.e(TAG, "Error updating in general collection", e);
@@ -454,10 +452,11 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             // Hide progress dialog
             hideProgressDialog();
 
-            // Update local status
+            // Update local status FIRST - CRITICAL FOR BUTTON VISIBILITY
             currentStatus = newStatus;
+            Log.d(TAG, "Local status updated to: " + currentStatus);
 
-            // Update UI immediately
+            // Update UI immediately on main thread
             runOnUiThread(() -> {
                 try {
                     Log.d(TAG, "Updating UI on main thread");
@@ -471,16 +470,22 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                     // Update status background
                     updateStatusBackground(newStatus);
 
-                    // Update button visibility - hide buttons for approved/rejected
-                    updateButtonVisibility(newStatus);
-
-                    // Re-enable buttons (though they should be hidden now)
-                    setButtonsEnabled(true);
+                    // CRITICAL: Update button visibility IMMEDIATELY after status change
+                    // This is the key fix - force update button visibility
+                    forceUpdateButtonVisibility(newStatus);
 
                     // Show success message
                     String message = "Application " + newStatus.toLowerCase() + " successfully!";
                     Toast.makeText(MunicipalSubsidyDetails.this, message, Toast.LENGTH_LONG).show();
                     Log.d(TAG, "Success message shown: " + message);
+
+                    // Update counters after successful status change
+                    updateSubsidyCounters(newStatus);
+
+                    // Navigate to success page if approved
+                    if ("Approved".equals(newStatus)) {
+                        navigateToSuccessApprovedSubsidy();
+                    }
 
                 } catch (Exception e) {
                     Log.e(TAG, "Error updating UI after successful status update", e);
@@ -491,6 +496,274 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             Log.e(TAG, "Error handling status update success", e);
             hideProgressDialog();
             setButtonsEnabled(true);
+        }
+    }
+
+    /**
+     * Navigate to SuccessApprovedSubsidy activity
+     */
+    private void navigateToSuccessApprovedSubsidy() {
+        try {
+            Log.d(TAG, "navigateToSuccessApprovedSubsidy() called");
+
+            // Get farmer data for navigation
+            if (tvFarmerName != null) {
+                farmerName = tvFarmerName.getText().toString();
+            }
+            if (tvSubsidyType != null) {
+                subsidyType = tvSubsidyType.getText().toString();
+            }
+
+            // Use Handler to add a slight delay for better UX
+            new Handler().postDelayed(() -> {
+                try {
+                    Log.d(TAG, "Starting navigation to SuccessApprovedSubsidy");
+
+                    Intent intent = new Intent(MunicipalSubsidyDetails.this, SuccessedApprovedSubsidy.class);
+
+                    // Pass relevant data to the success page
+                    intent.putExtra("subsidyId", subsidyId);
+                    intent.putExtra("farmerName", farmerName);
+                    intent.putExtra("subsidyType", subsidyType);
+                    intent.putExtra("barangay", barangayName);
+                    intent.putExtra("approvalDate", System.currentTimeMillis());
+
+                    // Add flags to clear the activity stack
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                    Log.d(TAG, "Intent prepared with data:");
+                    Log.d(TAG, "- subsidyId: " + subsidyId);
+                    Log.d(TAG, "- farmerName: " + farmerName);
+                    Log.d(TAG, "- subsidyType: " + subsidyType);
+                    Log.d(TAG, "- barangay: " + barangayName);
+
+                    startActivity(intent);
+
+                    // Finish current activity
+                    finish();
+
+                    Log.d(TAG, "Navigation completed successfully");
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Error during navigation", e);
+                    Toast.makeText(MunicipalSubsidyDetails.this,
+                            "Navigation error: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }, NAVIGATION_DELAY);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up navigation", e);
+            Toast.makeText(this, "Error setting up navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Update subsidy counters after status change
+     */
+    private void updateSubsidyCounters(String newStatus) {
+        try {
+            Log.d(TAG, "updateSubsidyCounters() called with status: " + newStatus);
+
+            // Update both barangay-specific and municipal counters
+            if (barangayName != null && !barangayName.isEmpty()) {
+                updateBarangayCounters(newStatus);
+            }
+            updateMunicipalCounters(newStatus);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating subsidy counters", e);
+            // Don't fail the main operation if counter update fails
+        }
+    }
+
+    /**
+     * Update barangay-specific counters
+     */
+    private void updateBarangayCounters(String newStatus) {
+        try {
+            Log.d(TAG, "updateBarangayCounters() called for barangay: " + barangayName);
+
+            // Reference to barangay counters document
+            String countersPath = "Barangays/" + barangayName + "/Statistics/SubsidyCounters";
+
+            db.document(countersPath)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        try {
+                            Map<String, Object> updates = new HashMap<>();
+
+                            if (documentSnapshot.exists()) {
+                                // Get current counts
+                                long currentPending = documentSnapshot.getLong("pendingCount") != null ?
+                                        documentSnapshot.getLong("pendingCount") : 0;
+                                long currentApproved = documentSnapshot.getLong("approvedCount") != null ?
+                                        documentSnapshot.getLong("approvedCount") : 0;
+                                long currentRejected = documentSnapshot.getLong("rejectedCount") != null ?
+                                        documentSnapshot.getLong("rejectedCount") : 0;
+                                long currentTotal = documentSnapshot.getLong("totalRequests") != null ?
+                                        documentSnapshot.getLong("totalRequests") : 0;
+
+                                // Update counts based on status change
+                                if ("Approved".equals(newStatus)) {
+                                    updates.put("pendingCount", Math.max(0, currentPending - 1));
+                                    updates.put("approvedCount", currentApproved + 1);
+                                } else if ("Rejected".equals(newStatus)) {
+                                    updates.put("pendingCount", Math.max(0, currentPending - 1));
+                                    updates.put("rejectedCount", currentRejected + 1);
+                                }
+
+                                // Keep total the same (just moving between statuses)
+                                updates.put("totalRequests", currentTotal);
+
+                            } else {
+                                // Initialize counters if document doesn't exist
+                                if ("Approved".equals(newStatus)) {
+                                    updates.put("pendingCount", 0);
+                                    updates.put("approvedCount", 1);
+                                    updates.put("rejectedCount", 0);
+                                } else if ("Rejected".equals(newStatus)) {
+                                    updates.put("pendingCount", 0);
+                                    updates.put("approvedCount", 0);
+                                    updates.put("rejectedCount", 1);
+                                }
+                                updates.put("totalRequests", 1);
+                            }
+
+                            // Add metadata
+                            updates.put("lastUpdated", System.currentTimeMillis());
+                            updates.put("barangayName", barangayName);
+
+                            // Update the document
+                            db.document(countersPath)
+                                    .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Barangay counters updated successfully");
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e(TAG, "Failed to update barangay counters", e);
+                                    });
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error processing barangay counter update", e);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Failed to get barangay counters document", e);
+                    });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in updateBarangayCounters", e);
+        }
+    }
+
+    /**
+     * Update municipal-level counters
+     */
+    private void updateMunicipalCounters(String newStatus) {
+        try {
+            Log.d(TAG, "updateMunicipalCounters() called");
+
+            // Reference to municipal counters document
+            String countersPath = "Municipal/Statistics/SubsidyCounters";
+
+            db.document(countersPath)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        try {
+                            Map<String, Object> updates = new HashMap<>();
+
+                            if (documentSnapshot.exists()) {
+                                // Get current counts
+                                long currentPending = documentSnapshot.getLong("totalPendingCount") != null ?
+                                        documentSnapshot.getLong("totalPendingCount") : 0;
+                                long currentApproved = documentSnapshot.getLong("totalApprovedCount") != null ?
+                                        documentSnapshot.getLong("totalApprovedCount") : 0;
+                                long currentRejected = documentSnapshot.getLong("totalRejectedCount") != null ?
+                                        documentSnapshot.getLong("totalRejectedCount") : 0;
+                                long currentTotal = documentSnapshot.getLong("totalSubsidyRequests") != null ?
+                                        documentSnapshot.getLong("totalSubsidyRequests") : 0;
+
+                                // Update counts based on status change
+                                if ("Approved".equals(newStatus)) {
+                                    updates.put("totalPendingCount", Math.max(0, currentPending - 1));
+                                    updates.put("totalApprovedCount", currentApproved + 1);
+                                } else if ("Rejected".equals(newStatus)) {
+                                    updates.put("totalPendingCount", Math.max(0, currentPending - 1));
+                                    updates.put("totalRejectedCount", currentRejected + 1);
+                                }
+
+                                // Keep total the same
+                                updates.put("totalSubsidyRequests", currentTotal);
+
+                            } else {
+                                // Initialize counters if document doesn't exist
+                                if ("Approved".equals(newStatus)) {
+                                    updates.put("totalPendingCount", 0);
+                                    updates.put("totalApprovedCount", 1);
+                                    updates.put("totalRejectedCount", 0);
+                                } else if ("Rejected".equals(newStatus)) {
+                                    updates.put("totalPendingCount", 0);
+                                    updates.put("totalApprovedCount", 0);
+                                    updates.put("totalRejectedCount", 1);
+                                }
+                                updates.put("totalSubsidyRequests", 1);
+                            }
+
+                            // Add metadata
+                            updates.put("lastUpdated", System.currentTimeMillis());
+
+                            // Update barangay-specific counts within municipal document
+                            if (barangayName != null && !barangayName.isEmpty()) {
+                                Map<String, Object> barangayData = (Map<String, Object>) documentSnapshot.get("barangayBreakdown");
+                                if (barangayData == null) {
+                                    barangayData = new HashMap<>();
+                                }
+
+                                Map<String, Object> currentBarangayData = (Map<String, Object>) barangayData.get(barangayName);
+                                if (currentBarangayData == null) {
+                                    currentBarangayData = new HashMap<>();
+                                    currentBarangayData.put("pending", 0L);
+                                    currentBarangayData.put("approved", 0L);
+                                    currentBarangayData.put("rejected", 0L);
+                                }
+
+                                long barangayPending = (Long) currentBarangayData.getOrDefault("pending", 0L);
+                                long barangayApproved = (Long) currentBarangayData.getOrDefault("approved", 0L);
+                                long barangayRejected = (Long) currentBarangayData.getOrDefault("rejected", 0L);
+
+                                if ("Approved".equals(newStatus)) {
+                                    currentBarangayData.put("pending", Math.max(0, barangayPending - 1));
+                                    currentBarangayData.put("approved", barangayApproved + 1);
+                                } else if ("Rejected".equals(newStatus)) {
+                                    currentBarangayData.put("pending", Math.max(0, barangayPending - 1));
+                                    currentBarangayData.put("rejected", barangayRejected + 1);
+                                }
+
+                                barangayData.put(barangayName, currentBarangayData);
+                                updates.put("barangayBreakdown", barangayData);
+                            }
+
+                            // Update the document
+                            db.document(countersPath)
+                                    .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Municipal counters updated successfully");
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e(TAG, "Failed to update municipal counters", e);
+                                    });
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error processing municipal counter update", e);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Failed to get municipal counters document", e);
+                    });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in updateMunicipalCounters", e);
         }
     }
 
@@ -549,26 +822,6 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
         }
     }
 
-    // Add a test method to manually trigger button functionality
-    public void testButtons() {
-        Log.d(TAG, "=== MANUAL BUTTON TEST ===");
-
-        if (btnApprove != null) {
-            Log.d(TAG, "Testing approve button manually");
-            btnApprove.performClick();
-        } else {
-            Log.e(TAG, "Cannot test approve button - it's null");
-        }
-
-        if (btnReject != null) {
-            Log.d(TAG, "Testing reject button manually");
-            // Don't actually click, just test
-            Log.d(TAG, "Reject button is ready for testing");
-        } else {
-            Log.e(TAG, "Cannot test reject button - it's null");
-        }
-    }
-
     private void loadSubsidyData() {
         try {
             Log.d(TAG, "loadSubsidyData() called");
@@ -590,27 +843,21 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                         .collection("SubsidyRequests")
                         .document(subsidyId)
                         .get()
-                        .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                            @Override
-                            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                try {
-                                    Log.d(TAG, "Successfully loaded document from barangay collection");
-                                    hideProgressDialog();
-                                    handleDocumentSnapshot(documentSnapshot);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error handling document snapshot", e);
-                                    hideProgressDialog();
-                                    showErrorAndFinish("Error processing data");
-                                }
+                        .addOnSuccessListener(documentSnapshot -> {
+                            try {
+                                Log.d(TAG, "Successfully loaded document from barangay collection");
+                                hideProgressDialog();
+                                handleDocumentSnapshot(documentSnapshot);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error handling document snapshot", e);
+                                hideProgressDialog();
+                                showErrorAndFinish("Error processing data");
                             }
                         })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "Failed to load from barangay collection", e);
-                                hideProgressDialog();
-                                handleLoadFailure(e);
-                            }
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Failed to load from barangay collection", e);
+                            hideProgressDialog();
+                            handleLoadFailure(e);
                         });
             } else {
                 Log.d(TAG, "Loading from general collection");
@@ -619,27 +866,21 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                 db.collection("SubsidyRequests")
                         .document(subsidyId)
                         .get()
-                        .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                            @Override
-                            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                try {
-                                    Log.d(TAG, "Successfully loaded document from general collection");
-                                    hideProgressDialog();
-                                    handleDocumentSnapshot(documentSnapshot);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error handling document snapshot", e);
-                                    hideProgressDialog();
-                                    showErrorAndFinish("Error processing data");
-                                }
+                        .addOnSuccessListener(documentSnapshot -> {
+                            try {
+                                Log.d(TAG, "Successfully loaded document from general collection");
+                                hideProgressDialog();
+                                handleDocumentSnapshot(documentSnapshot);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error handling document snapshot", e);
+                                hideProgressDialog();
+                                showErrorAndFinish("Error processing data");
                             }
                         })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "Failed to load from general collection", e);
-                                hideProgressDialog();
-                                handleLoadFailure(e);
-                            }
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Failed to load from general collection", e);
+                            hideProgressDialog();
+                            handleLoadFailure(e);
                         });
             }
         } catch (Exception e) {
@@ -710,7 +951,7 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
             Log.d(TAG, "Current status set to: '" + currentStatus + "'");
 
             // Update UI and button visibility based on status - IMMEDIATELY
-            updateButtonVisibility(currentStatus);
+            forceUpdateButtonVisibility(currentStatus);
 
             // Date - handle Long timestamp from your database
             Object timestampObj = subsidyData.get("timestamp");
@@ -770,90 +1011,181 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
         }
     }
 
-    private void updateButtonVisibility(String status) {
+    /**
+     * ENHANCED: Force update button visibility - this is the key fix
+     * This method ensures buttons are properly hidden for processed applications
+     */
+    private void forceUpdateButtonVisibility(String status) {
         try {
-            Log.d(TAG, "updateButtonVisibility() called with status: '" + status + "'");
+            Log.d(TAG, "=== FORCE BUTTON VISIBILITY UPDATE START ===");
+            Log.d(TAG, "forceUpdateButtonVisibility() called with status: '" + status + "'");
 
             if (status == null) {
                 status = "Pending";
+                Log.d(TAG, "Status was null, defaulting to Pending");
             }
 
+            // Normalize status for comparison (case-insensitive, trimmed)
             String normalizedStatus = status.trim().toLowerCase(Locale.US);
+
+            // Determine if buttons should be visible
             boolean shouldShowButtons = "pending".equals(normalizedStatus);
 
-            Log.d(TAG, "Normalized status: '" + normalizedStatus + "', Should show buttons: " + shouldShowButtons);
+            Log.d(TAG, "Normalized status: '" + normalizedStatus + "'");
+            Log.d(TAG, "Should show buttons: " + shouldShowButtons);
 
-            if (buttonContainer != null) {
-                buttonContainer.setVisibility(shouldShowButtons ? View.VISIBLE : View.GONE);
-                Log.d(TAG, "Button container visibility set to: " + (shouldShowButtons ? "VISIBLE" : "GONE"));
-            } else {
-                Log.w(TAG, "Button container is null, using individual buttons");
-                // Fallback to individual buttons
-                if (btnApprove != null) {
-                    btnApprove.setVisibility(shouldShowButtons ? View.VISIBLE : View.GONE);
-                    Log.d(TAG, "Approve button visibility set to: " + (shouldShowButtons ? "VISIBLE" : "GONE"));
-                } else {
-                    Log.e(TAG, "btnApprove is null!");
-                }
-                if (btnReject != null) {
-                    btnReject.setVisibility(shouldShowButtons ? View.VISIBLE : View.GONE);
-                    Log.d(TAG, "Reject button visibility set to: " + (shouldShowButtons ? "VISIBLE" : "GONE"));
-                } else {
-                    Log.e(TAG, "btnReject is null!");
-                }
-            }
+            // CRITICAL: Force hide buttons for processed applications
+            if ("approved".equals(normalizedStatus) || "rejected".equals(normalizedStatus)) {
+                Log.d(TAG, "FORCE HIDING buttons for processed application");
+                shouldShowButtons = false;
 
-            // Also ensure buttons are enabled when visible
-            if (shouldShowButtons) {
+                // Immediately hide buttons with multiple approaches
+                hideButtonsImmediately();
+
+                // Also disable them
+                setButtonsEnabled(false);
+
+                Log.d(TAG, "Buttons forcefully hidden and disabled");
+            } else if ("pending".equals(normalizedStatus)) {
+                Log.d(TAG, "Showing buttons for pending application");
+                showButtonsImmediately();
                 setButtonsEnabled(true);
-                Log.d(TAG, "Buttons enabled because status is pending");
             }
 
-            // Force a test after visibility update
-            if (shouldShowButtons && btnApprove != null) {
-                btnApprove.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "Post-visibility update button state:");
-                        Log.d(TAG, "- Approve visibility: " + btnApprove.getVisibility());
-                        Log.d(TAG, "- Approve enabled: " + btnApprove.isEnabled());
-                        Log.d(TAG, "- Approve clickable: " + btnApprove.isClickable());
-                    }
-                });
-            }
+            // Final verification and logging
+            logButtonStates();
+
+            Log.d(TAG, "=== FORCE BUTTON VISIBILITY UPDATE END ===");
 
         } catch (Exception e) {
-            Log.e(TAG, "Error updating button visibility", e);
-            showButtonContainer();
+            Log.e(TAG, "Error in forceUpdateButtonVisibility", e);
+            // Fallback: hide buttons for safety
+            hideButtonsImmediately();
         }
     }
 
-    private void showButtonContainer() {
+    /**
+     * Immediately hide buttons using multiple approaches
+     */
+    private void hideButtonsImmediately() {
         try {
-            Log.d(TAG, "showButtonContainer() called");
+            Log.d(TAG, "hideButtonsImmediately() called");
 
+            // Approach 1: Hide button container if it exists
+            if (buttonContainer != null) {
+                buttonContainer.setVisibility(View.GONE);
+                Log.d(TAG, "Button container set to GONE");
+            }
+
+            // Approach 2: Hide individual buttons (fallback and reinforcement)
+            if (btnApprove != null) {
+                btnApprove.setVisibility(View.GONE);
+                btnApprove.setEnabled(false);
+                btnApprove.setClickable(false);
+                Log.d(TAG, "Approve button: GONE, disabled, non-clickable");
+            }
+
+            if (btnReject != null) {
+                btnReject.setVisibility(View.GONE);
+                btnReject.setEnabled(false);
+                btnReject.setClickable(false);
+                Log.d(TAG, "Reject button: GONE, disabled, non-clickable");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error hiding buttons immediately", e);
+        }
+    }
+
+    /**
+     * Immediately show buttons for pending applications
+     */
+    private void showButtonsImmediately() {
+        try {
+            Log.d(TAG, "showButtonsImmediately() called");
+
+            // Approach 1: Show button container if it exists
             if (buttonContainer != null) {
                 buttonContainer.setVisibility(View.VISIBLE);
                 Log.d(TAG, "Button container set to VISIBLE");
-            } else {
-                Log.w(TAG, "Button container is null - falling back to individual button showing");
-                // Fallback: show individual buttons
-                if (btnApprove != null) {
-                    btnApprove.setVisibility(View.VISIBLE);
-                    Log.d(TAG, "Approve button set to VISIBLE");
-                }
-                if (btnReject != null) {
-                    btnReject.setVisibility(View.VISIBLE);
-                    Log.d(TAG, "Reject button set to VISIBLE");
-                }
+            }
+
+            // Approach 2: Show individual buttons
+            if (btnApprove != null) {
+                btnApprove.setVisibility(View.VISIBLE);
+                btnApprove.setEnabled(true);
+                btnApprove.setClickable(true);
+                Log.d(TAG, "Approve button: VISIBLE, enabled, clickable");
+            }
+
+            if (btnReject != null) {
+                btnReject.setVisibility(View.VISIBLE);
+                btnReject.setEnabled(true);
+                btnReject.setClickable(true);
+                Log.d(TAG, "Reject button: VISIBLE, enabled, clickable");
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error showing button container", e);
+            Log.e(TAG, "Error showing buttons immediately", e);
         }
     }
 
+    /**
+     * Log current button states for debugging
+     */
+    private void logButtonStates() {
+        try {
+            Log.d(TAG, "=== CURRENT BUTTON STATES ===");
+
+            if (buttonContainer != null) {
+                Log.d(TAG, "Button container visibility: " +
+                        (buttonContainer.getVisibility() == View.VISIBLE ? "VISIBLE" :
+                                buttonContainer.getVisibility() == View.GONE ? "GONE" : "INVISIBLE"));
+            } else {
+                Log.d(TAG, "Button container: NULL");
+            }
+
+            if (btnApprove != null) {
+                Log.d(TAG, "Approve button - Visibility: " +
+                        (btnApprove.getVisibility() == View.VISIBLE ? "VISIBLE" :
+                                btnApprove.getVisibility() == View.GONE ? "GONE" : "INVISIBLE") +
+                        ", Enabled: " + btnApprove.isEnabled() +
+                        ", Clickable: " + btnApprove.isClickable());
+            } else {
+                Log.d(TAG, "Approve button: NULL");
+            }
+
+            if (btnReject != null) {
+                Log.d(TAG, "Reject button - Visibility: " +
+                        (btnReject.getVisibility() == View.VISIBLE ? "VISIBLE" :
+                                btnReject.getVisibility() == View.GONE ? "GONE" : "INVISIBLE") +
+                        ", Enabled: " + btnReject.isEnabled() +
+                        ", Clickable: " + btnReject.isClickable());
+            } else {
+                Log.d(TAG, "Reject button: NULL");
+            }
+
+            Log.d(TAG, "Current status: '" + currentStatus + "'");
+            Log.d(TAG, "=== END BUTTON STATES ===");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error logging button states", e);
+        }
+    }
+
+    /**
+     * Legacy method - kept for compatibility but now calls forceUpdateButtonVisibility
+     */
+    private void updateButtonVisibility(String status) {
+        forceUpdateButtonVisibility(status);
+    }
+
+    private void showButtonContainer() {
+        showButtonsImmediately();
+    }
+
     private void hideButtonContainer() {
+        hideButtonsImmediately();
     }
 
     private void updateStatusBackground(String status) {
@@ -1050,17 +1382,20 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
         }
     }
 
+    /**
+     * FIXED: Show monetary fields with proper text for Monetary Support
+     */
     private void showMonetaryFields(Map<String, Object> subsidyData) {
         try {
             if (tvMonetarySupportLabel != null && tvMonetarySupport != null) {
                 tvMonetarySupportLabel.setVisibility(View.VISIBLE);
                 tvMonetarySupport.setVisibility(View.VISIBLE);
-                Object amountObj = subsidyData.get("monetaryAmount");
-                if (amountObj != null) {
-                    tvMonetarySupport.setText("₱" + String.valueOf(amountObj));
-                } else {
-                    tvMonetarySupport.setText("Amount not specified");
-                }
+
+                // FIXED: Always show "Monetary Support" for monetary support type
+                // Don't show "Amount not specified" - just show the support type
+                tvMonetarySupport.setText("Monetary Support");
+
+                Log.d(TAG, "Monetary support field set to: Monetary Support");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error showing monetary fields", e);
@@ -1163,12 +1498,7 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                 fileItem.setVisibility(View.VISIBLE);
                 tvFileName.setText(fileName);
                 if (btnDownloadFile != null) {
-                    btnDownloadFile.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            downloadFile(fileUrl);
-                        }
-                    });
+                    btnDownloadFile.setOnClickListener(v -> downloadFile(fileUrl));
                 }
             } else {
                 showNoFiles();
@@ -1194,25 +1524,19 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
                 StorageReference fileRef = storage.getReferenceFromUrl(fileUrl);
 
                 fileRef.getDownloadUrl()
-                        .addOnSuccessListener(new OnSuccessListener<Uri>() {
-                            @Override
-                            public void onSuccess(Uri uri) {
-                                try {
-                                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                                    intent.setData(uri);
-                                    startActivity(intent);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error opening file", e);
-                                    Toast.makeText(MunicipalSubsidyDetails.this, "Cannot open file", Toast.LENGTH_SHORT).show();
-                                }
+                        .addOnSuccessListener(uri -> {
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_VIEW);
+                                intent.setData(uri);
+                                startActivity(intent);
+                            } catch (Exception e2) {
+                                Log.e(TAG, "Error opening file", e2);
+                                Toast.makeText(MunicipalSubsidyDetails.this, "Cannot open file", Toast.LENGTH_SHORT).show();
                             }
                         })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "Failed to download file", e);
-                                Toast.makeText(MunicipalSubsidyDetails.this, "Failed to download file", Toast.LENGTH_SHORT).show();
-                            }
+                        .addOnFailureListener(e2 -> {
+                            Log.e(TAG, "Failed to download file", e2);
+                            Toast.makeText(MunicipalSubsidyDetails.this, "Failed to download file", Toast.LENGTH_SHORT).show();
                         });
             } catch (Exception ex) {
                 Log.e(TAG, "Error with Firebase Storage download", ex);
@@ -1225,20 +1549,15 @@ public class MunicipalSubsidyDetails extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume() called");
+
+        // CRITICAL: Re-apply button visibility on resume
         if (currentStatus != null) {
-            updateButtonVisibility(currentStatus);
+            Log.d(TAG, "Re-applying button visibility on resume for status: " + currentStatus);
+            forceUpdateButtonVisibility(currentStatus);
         }
 
         // Test buttons on resume
-        if (btnApprove != null && btnReject != null) {
-            Log.d(TAG, "Testing buttons on resume:");
-            Log.d(TAG, "Approve - Visible: " + (btnApprove.getVisibility() == View.VISIBLE) +
-                    ", Enabled: " + btnApprove.isEnabled() +
-                    ", Clickable: " + btnApprove.isClickable());
-            Log.d(TAG, "Reject - Visible: " + (btnReject.getVisibility() == View.VISIBLE) +
-                    ", Enabled: " + btnReject.isEnabled() +
-                    ", Clickable: " + btnReject.isClickable());
-        }
+        logButtonStates();
     }
 
     @Override

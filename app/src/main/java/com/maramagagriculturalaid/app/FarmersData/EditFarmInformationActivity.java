@@ -25,12 +25,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatSpinner;
 
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.maramagagriculturalaid.app.R;
-import com.maramagagriculturalaid.app.FarmersData.FarmersDetailsActivity;
+import com.maramagagriculturalaid.app.ActivityLogger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +95,14 @@ public class EditFarmInformationActivity extends AppCompatActivity {
     private Map<String, String> originalValues = new HashMap<>();
     private String originalFarmType = "";
 
+    // Predefined barangays in Maramag Municipality
+    private final String[] availableBarangays = {
+            "Anahawon", "Base Camp", "Bayabason", "Camp 1", "Colambugon",
+            "Dagumba-an", "Danggawan", "Dologon", "Kisanday", "Kuya",
+            "La Roxas", "Panadtalan", "Panalsalan", "North Poblacion", "South Poblacion",
+            "San Miguel", "San Roque", "Tubigon", "Kiharong", "Bagongsilang"
+    };
+
     // Spinner Data
     private String[] cropOptions = {"Select Crop", "Rice", "Corn", "Vegetables", "Fruits", "Root Crops", "Pineapple", "Other"};
     private String[] livestockOptions = {"Select Livestock", "Cattle", "Carabao", "Goat", "Goats", "Pig", "Chicken", "Duck", "Other"};
@@ -124,7 +136,54 @@ public class EditFarmInformationActivity extends AppCompatActivity {
         setupSpinners();
         setupClickListeners();
         setupChangeListeners();
-        loadFarmerData();
+
+        // Handle missing barangay information gracefully
+        if (barangay == null || barangay.isEmpty()) {
+            handleMissingBarangay();
+        } else {
+            // Validate barangay exists in our predefined list
+            boolean isValidBarangay = false;
+            for (String validBarangay : availableBarangays) {
+                if (validBarangay.equalsIgnoreCase(barangay)) {
+                    barangay = validBarangay; // Use correct case
+                    isValidBarangay = true;
+                    break;
+                }
+            }
+
+            if (isValidBarangay) {
+                loadFarmerData();
+            } else {
+                Log.w(TAG, "Invalid barangay: " + barangay);
+                handleMissingBarangay();
+            }
+        }
+    }
+
+    private void handleMissingBarangay() {
+        Log.w(TAG, "Missing or invalid barangay information");
+        showBarangaySelectionDialog();
+    }
+
+    private void showBarangaySelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Barangay");
+        builder.setMessage("Please select the barangay where this farmer is located:");
+
+        builder.setItems(availableBarangays, (dialog, which) -> {
+            barangay = availableBarangays[which];
+            Log.d(TAG, "User selected barangay: " + barangay);
+            loadFarmerData();
+            dialog.dismiss();
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            Toast.makeText(this, "Cannot proceed without barangay information", Toast.LENGTH_LONG).show();
+            finish();
+        });
+
+        builder.setCancelable(false);
+        builder.show();
     }
 
     private void initViews() {
@@ -140,8 +199,8 @@ public class EditFarmInformationActivity extends AppCompatActivity {
 
         // Crop form components
         etMunicipalCrop = findViewById(R.id.et_municipal_crop);
-        tvBarangayCrop = findViewById(R.id.tv_barangay_crop);
         etStreetCrop = findViewById(R.id.et_street_crop);
+        tvBarangayCrop = findViewById(R.id.tv_barangay_crop);
         spinnerCropsGrown = findViewById(R.id.spinner_crops_grown);
         layoutOtherCrop = findViewById(R.id.layout_other_crop);
         etOtherCrop = findViewById(R.id.et_other_crop);
@@ -150,8 +209,8 @@ public class EditFarmInformationActivity extends AppCompatActivity {
 
         // Livestock form components
         etMunicipalLivestock = findViewById(R.id.et_municipal_livestock);
-        tvBarangayLivestock = findViewById(R.id.tv_barangay_livestock);
         etStreetLivestock = findViewById(R.id.et_street_livestock);
+        tvBarangayLivestock = findViewById(R.id.tv_barangay_livestock);
         spinnerLivestockType = findViewById(R.id.spinner_livestock_type);
         layoutOtherLivestock = findViewById(R.id.layout_other_livestock);
         etOtherLivestock = findViewById(R.id.et_other_livestock);
@@ -159,28 +218,21 @@ public class EditFarmInformationActivity extends AppCompatActivity {
 
         // Mixed form components
         etMunicipalMixed = findViewById(R.id.et_municipal_mixed);
-        tvBarangayMixed = findViewById(R.id.tv_barangay_mixed);
         etStreetMixed = findViewById(R.id.et_street_mixed);
+        tvBarangayMixed = findViewById(R.id.tv_barangay_mixed);
         spinnerCropsGrownMixed = findViewById(R.id.spinner_crops_grown_mixed);
         layoutOtherCropMixed = findViewById(R.id.layout_other_crop_mixed);
         etOtherCropMixed = findViewById(R.id.et_other_crop_mixed);
-        etLotSizeValueMixed = findViewById(R.id.et_lot_size_value_mixed);
-        spinnerUnitMixed = findViewById(R.id.spinner_unit_mixed);
         spinnerLivestockTypeMixed = findViewById(R.id.spinner_livestock_type_mixed);
         layoutOtherLivestockMixed = findViewById(R.id.layout_other_livestock_mixed);
         etOtherLivestockMixed = findViewById(R.id.et_other_livestock_mixed);
+        etLotSizeValueMixed = findViewById(R.id.et_lot_size_value_mixed);
         etAnimalCountMixed = findViewById(R.id.et_animal_count_mixed);
+        spinnerUnitMixed = findViewById(R.id.spinner_unit_mixed);
 
         // Set farmer name
-        if (farmerName != null) {
+        if (tvFarmerName != null && farmerName != null) {
             tvFarmerName.setText(farmerName);
-        }
-
-        // Set barangay in all forms
-        if (barangay != null) {
-            tvBarangayCrop.setText(barangay);
-            tvBarangayLivestock.setText(barangay);
-            tvBarangayMixed.setText(barangay);
         }
 
         // Hide progress overlay initially
@@ -189,150 +241,45 @@ public class EditFarmInformationActivity extends AppCompatActivity {
         }
     }
 
-    private void setupChangeListeners() {
-        // Text change listeners for EditText fields
-        TextWatcher textWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                checkForChanges();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        };
-
-        // Add text watchers to all EditText fields
-        if (etMunicipalCrop != null) etMunicipalCrop.addTextChangedListener(textWatcher);
-        if (etStreetCrop != null) etStreetCrop.addTextChangedListener(textWatcher);
-        if (etOtherCrop != null) etOtherCrop.addTextChangedListener(textWatcher);
-        if (etLotSizeValue != null) etLotSizeValue.addTextChangedListener(textWatcher);
-
-        if (etMunicipalLivestock != null) etMunicipalLivestock.addTextChangedListener(textWatcher);
-        if (etStreetLivestock != null) etStreetLivestock.addTextChangedListener(textWatcher);
-        if (etOtherLivestock != null) etOtherLivestock.addTextChangedListener(textWatcher);
-        if (etAnimalCount != null) etAnimalCount.addTextChangedListener(textWatcher);
-
-        if (etMunicipalMixed != null) etMunicipalMixed.addTextChangedListener(textWatcher);
-        if (etStreetMixed != null) etStreetMixed.addTextChangedListener(textWatcher);
-        if (etOtherCropMixed != null) etOtherCropMixed.addTextChangedListener(textWatcher);
-        if (etOtherLivestockMixed != null) etOtherLivestockMixed.addTextChangedListener(textWatcher);
-        if (etLotSizeValueMixed != null) etLotSizeValueMixed.addTextChangedListener(textWatcher);
-        if (etAnimalCountMixed != null) etAnimalCountMixed.addTextChangedListener(textWatcher);
-    }
-
-    private void checkForChanges() {
-        hasUnsavedChanges = true;
-        Log.d(TAG, "Changes detected - hasUnsavedChanges set to true");
-    }
-
-    private void saveOriginalValues() {
-        // Save original values after data is loaded
-        originalValues.clear();
-        originalFarmType = currentFarmType;
-
-        // Save crop form values
-        originalValues.put("etMunicipalCrop", getTextSafely(etMunicipalCrop));
-        originalValues.put("etStreetCrop", getTextSafely(etStreetCrop));
-        originalValues.put("etOtherCrop", getTextSafely(etOtherCrop));
-        originalValues.put("etLotSizeValue", getTextSafely(etLotSizeValue));
-        originalValues.put("spinnerCropsGrown", String.valueOf(spinnerCropsGrown.getSelectedItemPosition()));
-        originalValues.put("spinnerUnit", String.valueOf(spinnerUnit.getSelectedItemPosition()));
-
-        // Save livestock form values
-        originalValues.put("etMunicipalLivestock", getTextSafely(etMunicipalLivestock));
-        originalValues.put("etStreetLivestock", getTextSafely(etStreetLivestock));
-        originalValues.put("etOtherLivestock", getTextSafely(etOtherLivestock));
-        originalValues.put("etAnimalCount", getTextSafely(etAnimalCount));
-        originalValues.put("spinnerLivestockType", String.valueOf(spinnerLivestockType.getSelectedItemPosition()));
-
-        // Save mixed form values
-        originalValues.put("etMunicipalMixed", getTextSafely(etMunicipalMixed));
-        originalValues.put("etStreetMixed", getTextSafely(etStreetMixed));
-        originalValues.put("etOtherCropMixed", getTextSafely(etOtherCropMixed));
-        originalValues.put("etOtherLivestockMixed", getTextSafely(etOtherLivestockMixed));
-        originalValues.put("etLotSizeValueMixed", getTextSafely(etLotSizeValueMixed));
-        originalValues.put("etAnimalCountMixed", getTextSafely(etAnimalCountMixed));
-        originalValues.put("spinnerCropsGrownMixed", String.valueOf(spinnerCropsGrownMixed.getSelectedItemPosition()));
-        originalValues.put("spinnerLivestockTypeMixed", String.valueOf(spinnerLivestockTypeMixed.getSelectedItemPosition()));
-        originalValues.put("spinnerUnitMixed", String.valueOf(spinnerUnitMixed.getSelectedItemPosition()));
-
-        hasUnsavedChanges = false;
-        Log.d(TAG, "Original values saved, hasUnsavedChanges reset to false");
-    }
-
-    private String getTextSafely(EditText editText) {
-        return editText != null && editText.getText() != null ? editText.getText().toString() : "";
-    }
-
     private void setupSpinners() {
-        // Create custom adapters with black text
-        ArrayAdapter<String> cropAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, cropOptions) {
-            @Override
-            public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
+        // Setup crop spinners
+        if (spinnerCropsGrown != null) {
+            ArrayAdapter<String> cropAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cropOptions);
+            cropAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerCropsGrown.setAdapter(cropAdapter);
+        }
 
-            @Override
-            public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
-        };
-        cropAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        if (spinnerCropsGrownMixed != null) {
+            ArrayAdapter<String> cropMixedAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cropOptions);
+            cropMixedAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerCropsGrownMixed.setAdapter(cropMixedAdapter);
+        }
 
-        ArrayAdapter<String> livestockAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, livestockOptions) {
-            @Override
-            public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
+        // Setup livestock spinners
+        if (spinnerLivestockType != null) {
+            ArrayAdapter<String> livestockAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, livestockOptions);
+            livestockAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerLivestockType.setAdapter(livestockAdapter);
+        }
 
-            @Override
-            public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
-        };
-        livestockAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        if (spinnerLivestockTypeMixed != null) {
+            ArrayAdapter<String> livestockMixedAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, livestockOptions);
+            livestockMixedAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerLivestockTypeMixed.setAdapter(livestockMixedAdapter);
+        }
 
-        ArrayAdapter<String> unitAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, unitOptions) {
-            @Override
-            public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
+        // Setup unit spinners
+        if (spinnerUnit != null) {
+            ArrayAdapter<String> unitAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, unitOptions);
+            unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerUnit.setAdapter(unitAdapter);
+        }
 
-            @Override
-            public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                textView.setTextColor(getResources().getColor(android.R.color.black));
-                return view;
-            }
-        };
-        unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        // Set adapters
-        spinnerCropsGrown.setAdapter(cropAdapter);
-        spinnerCropsGrownMixed.setAdapter(cropAdapter);
-        spinnerLivestockType.setAdapter(livestockAdapter);
-        spinnerLivestockTypeMixed.setAdapter(livestockAdapter);
-        spinnerUnit.setAdapter(unitAdapter);
-        spinnerUnitMixed.setAdapter(unitAdapter);
+        if (spinnerUnitMixed != null) {
+            ArrayAdapter<String> unitMixedAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, unitOptions);
+            unitMixedAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerUnitMixed.setAdapter(unitMixedAdapter);
+        }
 
         // Setup spinner listeners
         setupSpinnerListeners();
@@ -340,120 +287,74 @@ public class EditFarmInformationActivity extends AppCompatActivity {
 
     private void setupSpinnerListeners() {
         // Crop spinner listener
-        spinnerCropsGrown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == cropOptions.length - 1) { // "Other" selected
-                    layoutOtherCrop.setVisibility(View.VISIBLE);
-                } else {
-                    layoutOtherCrop.setVisibility(View.GONE);
-                    etOtherCrop.setText("");
+        if (spinnerCropsGrown != null) {
+            spinnerCropsGrown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (layoutOtherCrop != null) {
+                        layoutOtherCrop.setVisibility(position == cropOptions.length - 1 ? View.VISIBLE : View.GONE);
+                    }
+                    hasUnsavedChanges = true;
                 }
-                checkForChanges();
-            }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        }
+
+        // Mixed crop spinner listener
+        if (spinnerCropsGrownMixed != null) {
+            spinnerCropsGrownMixed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (layoutOtherCropMixed != null) {
+                        layoutOtherCropMixed.setVisibility(position == cropOptions.length - 1 ? View.VISIBLE : View.GONE);
+                    }
+                    hasUnsavedChanges = true;
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        }
 
         // Livestock spinner listener
-        spinnerLivestockType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == livestockOptions.length - 1) { // "Other" selected
-                    layoutOtherLivestock.setVisibility(View.VISIBLE);
-                } else {
-                    layoutOtherLivestock.setVisibility(View.GONE);
-                    etOtherLivestock.setText("");
+        if (spinnerLivestockType != null) {
+            spinnerLivestockType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (layoutOtherLivestock != null) {
+                        layoutOtherLivestock.setVisibility(position == livestockOptions.length - 1 ? View.VISIBLE : View.GONE);
+                    }
+                    hasUnsavedChanges = true;
                 }
-                checkForChanges();
-            }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        }
 
-        // Mixed form crop spinner listener
-        spinnerCropsGrownMixed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == cropOptions.length - 1) { // "Other" selected
-                    layoutOtherCropMixed.setVisibility(View.VISIBLE);
-                } else {
-                    layoutOtherCropMixed.setVisibility(View.GONE);
-                    etOtherCropMixed.setText("");
+        // Mixed livestock spinner listener
+        if (spinnerLivestockTypeMixed != null) {
+            spinnerLivestockTypeMixed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (layoutOtherLivestockMixed != null) {
+                        layoutOtherLivestockMixed.setVisibility(position == livestockOptions.length - 1 ? View.VISIBLE : View.GONE);
+                    }
+                    hasUnsavedChanges = true;
                 }
-                checkForChanges();
-            }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        // Mixed form livestock spinner listener
-        spinnerLivestockTypeMixed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == livestockOptions.length - 1) { // "Other" selected
-                    layoutOtherLivestockMixed.setVisibility(View.VISIBLE);
-                } else {
-                    layoutOtherLivestockMixed.setVisibility(View.GONE);
-                    etOtherLivestockMixed.setText("");
-                }
-                checkForChanges();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        // Unit spinner listeners
-        spinnerUnit.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                checkForChanges();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        spinnerUnitMixed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                checkForChanges();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        }
     }
 
     private void setupClickListeners() {
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> handleBackPress());
         }
-
-        // Farm type radio group listener
-        rgFarmType.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rb_crop) {
-                viewFlipper.setDisplayedChild(0);
-                currentFarmType = "Crop";
-                // Auto-fill shared data when switching to crop
-                autoFillSharedData("Crop");
-            } else if (checkedId == R.id.rb_livestock) {
-                viewFlipper.setDisplayedChild(1);
-                currentFarmType = "Livestock";
-                // Auto-fill shared data when switching to livestock
-                autoFillSharedData("Livestock");
-            } else if (checkedId == R.id.rb_mixed) {
-                viewFlipper.setDisplayedChild(2);
-                currentFarmType = "Mixed";
-                // Auto-fill shared data when switching to mixed
-                autoFillSharedData("Mixed");
-            }
-            checkForChanges();
-        });
 
         if (btnSave != null) {
             btnSave.setOnClickListener(v -> {
@@ -462,203 +363,74 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 }
             });
         }
-    }
 
-    private void handleBackPress() {
-        if (hasUnsavedChanges) {
-            showUnsavedChangesDialog();
-        } else {
-            navigateToFarmersDetailsActivity();
+        // Radio group listener
+        if (rgFarmType != null) {
+            rgFarmType.setOnCheckedChangeListener((group, checkedId) -> {
+                hasUnsavedChanges = true;
+                if (checkedId == R.id.rb_crop) {
+                    currentFarmType = "Crop";
+                    viewFlipper.setDisplayedChild(0);
+                    autoFillCropForm();
+                } else if (checkedId == R.id.rb_livestock) {
+                    currentFarmType = "Livestock";
+                    viewFlipper.setDisplayedChild(1);
+                    autoFillLivestockForm();
+                } else if (checkedId == R.id.rb_mixed) {
+                    currentFarmType = "Mixed";
+                    viewFlipper.setDisplayedChild(2);
+                    autoFillMixedForm();
+                }
+            });
         }
     }
 
-    private void showUnsavedChangesDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Unsaved Changes")
-                .setMessage("You have unsaved changes. Do you want to save them before leaving?")
-                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (validateForm()) {
-                            saveAllFarmerInformation();
-                        }
-                    }
-                })
-                .setNegativeButton("Discard", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        hasUnsavedChanges = false;
-                        navigateToFarmersDetailsActivity();
-                    }
-                })
-                .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                })
-                .setCancelable(false)
-                .show();
-    }
+    private void setupChangeListeners() {
+        TextWatcher changeWatcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-    private void navigateToFarmersDetailsActivity() {
-        Intent intent = new Intent(this, FarmersDetailsActivity.class);
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
-        // Pass all the necessary data to FarmersDetailsActivity
-        intent.putExtra("farmerId", farmerId);
-        intent.putExtra("farmerName", farmerName);
-        intent.putExtra("barangay", barangay);
-        intent.putExtra("farmerDocumentId", farmerDocumentId);
+            @Override
+            public void afterTextChanged(Editable s) {
+                hasUnsavedChanges = true;
+            }
+        };
 
-        // Pass basic information if available
-        if (firstName != null) intent.putExtra("firstName", firstName);
-        if (middleName != null) intent.putExtra("middleName", middleName);
-        if (lastName != null) intent.putExtra("lastName", lastName);
-        if (contactNumber != null) intent.putExtra("contactNumber", contactNumber);
-
-        // Clear the activity stack and start FarmersDetailsActivity
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        startActivity(intent);
-        finish();
-    }
-
-    private void autoFillSharedData(String targetFarmType) {
-        // Auto-fill street and municipal data across farm types
-        switch (targetFarmType) {
-            case "Crop":
-                if (!TextUtils.isEmpty(sharedStreet) && TextUtils.isEmpty(etStreetCrop.getText())) {
-                    etStreetCrop.setText(sharedStreet);
-                }
-                if (!TextUtils.isEmpty(sharedMunicipal) && TextUtils.isEmpty(etMunicipalCrop.getText())) {
-                    etMunicipalCrop.setText(sharedMunicipal);
-                }
-                break;
-            case "Livestock":
-                if (!TextUtils.isEmpty(sharedStreet) && TextUtils.isEmpty(etStreetLivestock.getText())) {
-                    etStreetLivestock.setText(sharedStreet);
-                }
-                if (!TextUtils.isEmpty(sharedMunicipal) && TextUtils.isEmpty(etMunicipalLivestock.getText())) {
-                    etMunicipalLivestock.setText(sharedMunicipal);
-                }
-                break;
-            case "Mixed":
-                if (!TextUtils.isEmpty(sharedStreet) && TextUtils.isEmpty(etStreetMixed.getText())) {
-                    etStreetMixed.setText(sharedStreet);
-                }
-                if (!TextUtils.isEmpty(sharedMunicipal) && TextUtils.isEmpty(etMunicipalMixed.getText())) {
-                    etMunicipalMixed.setText(sharedMunicipal);
-                }
-                break;
-        }
+        // Add change listeners to all EditText fields
+        if (etMunicipalCrop != null) etMunicipalCrop.addTextChangedListener(changeWatcher);
+        if (etStreetCrop != null) etStreetCrop.addTextChangedListener(changeWatcher);
+        if (etOtherCrop != null) etOtherCrop.addTextChangedListener(changeWatcher);
+        if (etLotSizeValue != null) etLotSizeValue.addTextChangedListener(changeWatcher);
+        if (etMunicipalLivestock != null) etMunicipalLivestock.addTextChangedListener(changeWatcher);
+        if (etStreetLivestock != null) etStreetLivestock.addTextChangedListener(changeWatcher);
+        if (etOtherLivestock != null) etOtherLivestock.addTextChangedListener(changeWatcher);
+        if (etAnimalCount != null) etAnimalCount.addTextChangedListener(changeWatcher);
+        if (etMunicipalMixed != null) etMunicipalMixed.addTextChangedListener(changeWatcher);
+        if (etStreetMixed != null) etStreetMixed.addTextChangedListener(changeWatcher);
+        if (etOtherCropMixed != null) etOtherCropMixed.addTextChangedListener(changeWatcher);
+        if (etOtherLivestockMixed != null) etOtherLivestockMixed.addTextChangedListener(changeWatcher);
+        if (etLotSizeValueMixed != null) etLotSizeValueMixed.addTextChangedListener(changeWatcher);
+        if (etAnimalCountMixed != null) etAnimalCountMixed.addTextChangedListener(changeWatcher);
     }
 
     private void loadFarmerData() {
-        if (barangay == null) {
-            Toast.makeText(this, "Missing barangay information", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
         if (progressOverlay != null) {
             progressOverlay.setVisibility(View.VISIBLE);
         }
 
-        // Load farmer basic data first, then farm type data
-        if (farmerDocumentId != null && !farmerDocumentId.isEmpty()) {
-            loadFarmerByDocumentId(farmerDocumentId);
-        } else if (farmerId != null && !farmerId.isEmpty()) {
-            loadFarmerByFarmerId(farmerId);
-        } else if (farmerName != null && !farmerName.isEmpty()) {
-            loadFarmerByDocumentId(farmerName);
-        } else {
-            if (progressOverlay != null) {
-                progressOverlay.setVisibility(View.GONE);
-            }
-            Toast.makeText(this, "Missing farmer information", Toast.LENGTH_SHORT).show();
-            finish();
-        }
+        // Set barangay in all forms
+        if (tvBarangayCrop != null) tvBarangayCrop.setText(barangay);
+        if (tvBarangayLivestock != null) tvBarangayLivestock.setText(barangay);
+        if (tvBarangayMixed != null) tvBarangayMixed.setText(barangay);
+
+        // Load farm type data
+        loadFarmTypeData(farmerDocumentId);
     }
 
-    private void loadFarmerByDocumentId(String documentId) {
-        Log.d(TAG, "Trying to load farmer by document ID: " + documentId);
-
-        DocumentReference farmerRef = db.collection("Barangays")
-                .document(barangay)
-                .collection("Farmers")
-                .document(documentId);
-
-        farmerRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot document = task.getResult();
-                if (document.exists()) {
-                    Log.d(TAG, "Farmer found by document ID: " + documentId);
-                    farmerDocumentId = documentId;
-                    // Load farm type data from subcollection
-                    loadFarmTypeData(documentId);
-                } else {
-                    Log.d(TAG, "Farmer not found by document ID: " + documentId);
-                    if (farmerId != null && !farmerId.isEmpty()) {
-                        loadFarmerByFarmerId(farmerId);
-                    } else {
-                        if (progressOverlay != null) {
-                            progressOverlay.setVisibility(View.GONE);
-                        }
-                        Toast.makeText(this, "Farmer data not found", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                }
-            } else {
-                Log.e(TAG, "Error loading farmer by document ID", task.getException());
-                if (farmerId != null && !farmerId.isEmpty()) {
-                    loadFarmerByFarmerId(farmerId);
-                } else {
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    Toast.makeText(this, "Error loading farmer data", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        });
-    }
-
-    private void loadFarmerByFarmerId(String searchFarmerId) {
-        Log.d(TAG, "Trying to load farmer by farmer ID: " + searchFarmerId);
-
-        db.collection("Barangays")
-                .document(barangay)
-                .collection("Farmers")
-                .whereEqualTo("farmerId", searchFarmerId)
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Log.d(TAG, "Farmer found by farmer ID: " + searchFarmerId + ", Document ID: " + document.getId());
-                            farmerDocumentId = document.getId();
-                            // Load farm type data from subcollection
-                            loadFarmTypeData(document.getId());
-                            return;
-                        }
-                    }
-
-                    Log.d(TAG, "Farmer not found by farmer ID: " + searchFarmerId);
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    Toast.makeText(this, "Farmer data not found in " + barangay, Toast.LENGTH_LONG).show();
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error searching farmer by ID", e);
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    Toast.makeText(this, "Error loading farmer data", Toast.LENGTH_SHORT).show();
-                    finish();
-                });
-    }
-
+    // FIXED: Enhanced to properly detect and handle mixed farm types
     private void loadFarmTypeData(String farmerDocId) {
         Log.d(TAG, "Loading farm type data for farmer: " + farmerDocId);
 
@@ -670,15 +442,23 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        boolean hasData = false;
+                        boolean hasCropData = false;
+                        boolean hasLivestockData = false;
+
+                        // Clear previous data
+                        cropData.clear();
+                        livestockData.clear();
+
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             String docId = document.getId();
+                            Map<String, Object> documentData = document.getData();
+
                             Log.d(TAG, "Found farm type document: " + docId);
-                            Log.d(TAG, "Document data: " + document.getData());
+                            Log.d(TAG, "Document data: " + documentData);
 
                             // Extract shared data (street and municipal)
-                            String street = (String) document.getData().get("street");
-                            String municipal = (String) document.getData().get("municipal");
+                            String street = (String) documentData.get("street");
+                            String municipal = (String) documentData.get("municipal");
 
                             if (!TextUtils.isEmpty(street)) {
                                 sharedStreet = street;
@@ -687,29 +467,50 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                                 sharedMunicipal = municipal;
                             }
 
+                            // Store data based on document ID
                             if ("Crop".equals(docId)) {
-                                cropData = document.getData();
-                                currentFarmType = "Crop";
-                                hasData = true;
-                                populateCropFormFromData();
+                                cropData.putAll(documentData);
+                                hasCropData = true;
+                                Log.d(TAG, "Loaded crop data: " + cropData);
                             } else if ("Livestock".equals(docId)) {
-                                livestockData = document.getData();
-                                currentFarmType = "Livestock";
-                                hasData = true;
-                                populateLivestockFormFromData();
+                                livestockData.putAll(documentData);
+                                hasLivestockData = true;
+                                Log.d(TAG, "Loaded livestock data: " + livestockData);
                             }
                         }
 
-                        // Auto-fill shared data to all forms
-                        autoFillAllForms();
-
-                        if (!hasData) {
+                        // Determine farm type based on available data
+                        if (hasCropData && hasLivestockData) {
+                            // Mixed farm type - has both crop and livestock data
+                            currentFarmType = "Mixed";
+                            populateMixedFormFromData();
+                            rbMixed.setChecked(true);
+                            viewFlipper.setDisplayedChild(2);
+                            Log.d(TAG, "Detected Mixed farm type with both crop and livestock data");
+                        } else if (hasCropData) {
+                            // Crop only
+                            currentFarmType = "Crop";
+                            populateCropFormFromData();
+                            rbCrop.setChecked(true);
+                            viewFlipper.setDisplayedChild(0);
+                            Log.d(TAG, "Detected Crop farm type");
+                        } else if (hasLivestockData) {
+                            // Livestock only
+                            currentFarmType = "Livestock";
+                            populateLivestockFormFromData();
+                            rbLivestock.setChecked(true);
+                            viewFlipper.setDisplayedChild(1);
+                            Log.d(TAG, "Detected Livestock farm type");
+                        } else {
                             // No farm type data found, default to Crop
                             Log.d(TAG, "No farm type data found, defaulting to Crop");
                             currentFarmType = "Crop";
                             rbCrop.setChecked(true);
                             viewFlipper.setDisplayedChild(0);
                         }
+
+                        // Auto-fill shared data to all forms
+                        autoFillAllForms();
 
                         // Save original values after data is loaded
                         saveOriginalValues();
@@ -731,288 +532,377 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 });
     }
 
-    private void autoFillAllForms() {
-        // Auto-fill street and municipal to all forms if they're empty
-        if (!TextUtils.isEmpty(sharedStreet)) {
-            if (TextUtils.isEmpty(etStreetCrop.getText())) {
-                etStreetCrop.setText(sharedStreet);
-            }
-            if (TextUtils.isEmpty(etStreetLivestock.getText())) {
-                etStreetLivestock.setText(sharedStreet);
-            }
-            if (TextUtils.isEmpty(etStreetMixed.getText())) {
-                etStreetMixed.setText(sharedStreet);
-            }
-        }
-
-        if (!TextUtils.isEmpty(sharedMunicipal)) {
-            if (TextUtils.isEmpty(etMunicipalCrop.getText())) {
-                etMunicipalCrop.setText(sharedMunicipal);
-            }
-            if (TextUtils.isEmpty(etMunicipalLivestock.getText())) {
-                etMunicipalLivestock.setText(sharedMunicipal);
-            }
-            if (TextUtils.isEmpty(etMunicipalMixed.getText())) {
-                etMunicipalMixed.setText(sharedMunicipal);
-            }
-        }
-
-        Log.d(TAG, "Auto-filled shared data - Street: " + sharedStreet + ", Municipal: " + sharedMunicipal);
-    }
-
     private void populateCropFormFromData() {
-        rbCrop.setChecked(true);
-        viewFlipper.setDisplayedChild(0);
+        Log.d(TAG, "Populating crop form from data");
+        if (cropData != null && !cropData.isEmpty()) {
+            String municipal = (String) cropData.get("municipal");
+            String street = (String) cropData.get("street");
+            String cropsGrown = (String) cropData.get("cropsGrown");
+            String lotSizeValue = (String) cropData.get("lotSizeValue");
+            String lotSizeUnit = (String) cropData.get("lotSizeUnit");
 
-        String municipal = (String) cropData.get("municipal");
-        String street = (String) cropData.get("street");
-        String cropsGrown = (String) cropData.get("cropsGrown");
-        String lotSizeValue = (String) cropData.get("lotSizeValue");
-        String lotSizeUnit = (String) cropData.get("lotSizeUnit");
+            if (municipal != null) etMunicipalCrop.setText(municipal);
+            if (street != null) etStreetCrop.setText(street);
+            if (lotSizeValue != null) etLotSizeValue.setText(lotSizeValue);
 
-        if (municipal != null) etMunicipalCrop.setText(municipal);
-        if (street != null) etStreetCrop.setText(street);
-        if (lotSizeValue != null) etLotSizeValue.setText(lotSizeValue);
+            // Set unit spinner
+            if (lotSizeUnit != null) {
+                for (int i = 0; i < unitOptions.length; i++) {
+                    if (unitOptions[i].equals(lotSizeUnit)) {
+                        spinnerUnit.setSelection(i);
+                        break;
+                    }
+                }
+            }
 
-        // Set unit spinner
-        if (lotSizeUnit != null) {
-            for (int i = 0; i < unitOptions.length; i++) {
-                if (unitOptions[i].equals(lotSizeUnit)) {
-                    spinnerUnit.setSelection(i);
-                    break;
+            // Set crop spinner
+            if (cropsGrown != null && !cropsGrown.isEmpty()) {
+                boolean found = false;
+                for (int i = 1; i < cropOptions.length - 1; i++) { // Skip "Select Crop" and "Other"
+                    if (cropOptions[i].equalsIgnoreCase(cropsGrown)) {
+                        spinnerCropsGrown.setSelection(i);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Set to "Other" and show custom field
+                    spinnerCropsGrown.setSelection(cropOptions.length - 1);
+                    layoutOtherCrop.setVisibility(View.VISIBLE);
+                    etOtherCrop.setText(cropsGrown);
                 }
             }
         }
-
-        // Set crop spinner
-        if (cropsGrown != null && !cropsGrown.isEmpty()) {
-            boolean found = false;
-            for (int i = 1; i < cropOptions.length - 1; i++) { // Skip "Select Crop" and "Other"
-                if (cropOptions[i].equalsIgnoreCase(cropsGrown)) {
-                    spinnerCropsGrown.setSelection(i);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                // Set to "Other" and show custom field
-                spinnerCropsGrown.setSelection(cropOptions.length - 1);
-                layoutOtherCrop.setVisibility(View.VISIBLE);
-                etOtherCrop.setText(cropsGrown);
-            }
-        }
-
-        Log.d(TAG, "Populated crop form with data");
     }
 
     private void populateLivestockFormFromData() {
-        rbLivestock.setChecked(true);
-        viewFlipper.setDisplayedChild(1);
+        Log.d(TAG, "Populating livestock form from data");
+        if (livestockData != null && !livestockData.isEmpty()) {
+            String municipal = (String) livestockData.get("municipal");
+            String street = (String) livestockData.get("street");
+            String livestockType = (String) livestockData.get("livestockType");
+            Object livestockCountObj = livestockData.get("livestockCount");
 
-        String municipal = (String) livestockData.get("municipal");
-        String street = (String) livestockData.get("street");
-        String livestockType = (String) livestockData.get("livestockType");
-        Object livestockCountObj = livestockData.get("livestockCount");
+            if (municipal != null) etMunicipalLivestock.setText(municipal);
+            if (street != null) etStreetLivestock.setText(street);
+            if (livestockCountObj != null) etAnimalCount.setText(String.valueOf(livestockCountObj));
 
-        if (municipal != null) etMunicipalLivestock.setText(municipal);
-        if (street != null) etStreetLivestock.setText(street);
-
-        if (livestockCountObj != null) {
-            etAnimalCount.setText(String.valueOf(livestockCountObj));
-        }
-
-        // Set livestock spinner
-        if (livestockType != null && !livestockType.isEmpty()) {
-            boolean found = false;
-            for (int i = 1; i < livestockOptions.length - 1; i++) { // Skip "Select Livestock" and "Other"
-                if (livestockOptions[i].equalsIgnoreCase(livestockType)) {
-                    spinnerLivestockType.setSelection(i);
-                    found = true;
-                    break;
+            // Set livestock spinner
+            if (livestockType != null && !livestockType.isEmpty()) {
+                boolean found = false;
+                for (int i = 1; i < livestockOptions.length - 1; i++) { // Skip "Select Livestock" and "Other"
+                    if (livestockOptions[i].equalsIgnoreCase(livestockType)) {
+                        spinnerLivestockType.setSelection(i);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Set to "Other" and show custom field
+                    spinnerLivestockType.setSelection(livestockOptions.length - 1);
+                    layoutOtherLivestock.setVisibility(View.VISIBLE);
+                    etOtherLivestock.setText(livestockType);
                 }
             }
-            if (!found) {
-                // Set to "Other" and show custom field
-                spinnerLivestockType.setSelection(livestockOptions.length - 1);
-                layoutOtherLivestock.setVisibility(View.VISIBLE);
-                etOtherLivestock.setText(livestockType);
+        }
+    }
+
+    // FIXED: Enhanced mixed form population to handle both crop and livestock data properly
+    private void populateMixedFormFromData() {
+        Log.d(TAG, "Populating mixed form from data");
+        rbMixed.setChecked(true);
+        viewFlipper.setDisplayedChild(2);
+
+        // Populate from crop data
+        if (cropData != null && !cropData.isEmpty()) {
+            Log.d(TAG, "Populating crop section of mixed form");
+            String municipal = (String) cropData.get("municipal");
+            String street = (String) cropData.get("street");
+            String cropsGrown = (String) cropData.get("cropsGrown");
+            String lotSizeValue = (String) cropData.get("lotSizeValue");
+            String lotSizeUnit = (String) cropData.get("lotSizeUnit");
+
+            if (municipal != null) etMunicipalMixed.setText(municipal);
+            if (street != null) etStreetMixed.setText(street);
+            if (lotSizeValue != null) etLotSizeValueMixed.setText(lotSizeValue);
+
+            // Set unit spinner for mixed form
+            if (lotSizeUnit != null) {
+                for (int i = 0; i < unitOptions.length; i++) {
+                    if (unitOptions[i].equals(lotSizeUnit)) {
+                        spinnerUnitMixed.setSelection(i);
+                        break;
+                    }
+                }
+            }
+
+            // Set crop spinner for mixed form
+            if (cropsGrown != null && !cropsGrown.isEmpty()) {
+                boolean found = false;
+                for (int i = 1; i < cropOptions.length - 1; i++) { // Skip "Select Crop" and "Other"
+                    if (cropOptions[i].equalsIgnoreCase(cropsGrown)) {
+                        spinnerCropsGrownMixed.setSelection(i);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Set to "Other" and show custom field
+                    spinnerCropsGrownMixed.setSelection(cropOptions.length - 1);
+                    layoutOtherCropMixed.setVisibility(View.VISIBLE);
+                    etOtherCropMixed.setText(cropsGrown);
+                }
             }
         }
 
-        Log.d(TAG, "Populated livestock form with data");
+        // Populate from livestock data
+        if (livestockData != null && !livestockData.isEmpty()) {
+            Log.d(TAG, "Populating livestock section of mixed form");
+            String municipal = (String) livestockData.get("municipal");
+            String street = (String) livestockData.get("street");
+            String livestockType = (String) livestockData.get("livestockType");
+            Object livestockCountObj = livestockData.get("livestockCount");
+
+            // Use livestock data for municipal and street if crop data doesn't have them
+            if (municipal != null && TextUtils.isEmpty(etMunicipalMixed.getText())) {
+                etMunicipalMixed.setText(municipal);
+            }
+            if (street != null && TextUtils.isEmpty(etStreetMixed.getText())) {
+                etStreetMixed.setText(street);
+            }
+
+            if (livestockCountObj != null) {
+                etAnimalCountMixed.setText(String.valueOf(livestockCountObj));
+            }
+
+            // Set livestock spinner for mixed form
+            if (livestockType != null && !livestockType.isEmpty()) {
+                boolean found = false;
+                for (int i = 1; i < livestockOptions.length - 1; i++) { // Skip "Select Livestock" and "Other"
+                    if (livestockOptions[i].equalsIgnoreCase(livestockType)) {
+                        spinnerLivestockTypeMixed.setSelection(i);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Set to "Other" and show custom field
+                    spinnerLivestockTypeMixed.setSelection(livestockOptions.length - 1);
+                    layoutOtherLivestockMixed.setVisibility(View.VISIBLE);
+                    etOtherLivestockMixed.setText(livestockType);
+                }
+            }
+        }
+
+        Log.d(TAG, "Mixed form populated with crop and livestock data");
     }
 
-    // Rest of the validation and saving methods remain the same...
-    private boolean validateForm() {
-        switch (currentFarmType) {
-            case "Crop":
-                return validateCropForm();
-            case "Livestock":
-                return validateLivestockForm();
-            case "Mixed":
-                return validateMixedForm();
-            default:
-                Toast.makeText(this, "Please select a farm type", Toast.LENGTH_SHORT).show();
-                return false;
+    private void autoFillAllForms() {
+        autoFillCropForm();
+        autoFillLivestockForm();
+        autoFillMixedForm();
+    }
+
+    private void autoFillCropForm() {
+        if (!TextUtils.isEmpty(sharedMunicipal) && etMunicipalCrop != null && TextUtils.isEmpty(etMunicipalCrop.getText())) {
+            etMunicipalCrop.setText(sharedMunicipal);
         }
+        if (!TextUtils.isEmpty(sharedStreet) && etStreetCrop != null && TextUtils.isEmpty(etStreetCrop.getText())) {
+            etStreetCrop.setText(sharedStreet);
+        }
+    }
+
+    private void autoFillLivestockForm() {
+        if (!TextUtils.isEmpty(sharedMunicipal) && etMunicipalLivestock != null && TextUtils.isEmpty(etMunicipalLivestock.getText())) {
+            etMunicipalLivestock.setText(sharedMunicipal);
+        }
+        if (!TextUtils.isEmpty(sharedStreet) && etStreetLivestock != null && TextUtils.isEmpty(etStreetLivestock.getText())) {
+            etStreetLivestock.setText(sharedStreet);
+        }
+    }
+
+    private void autoFillMixedForm() {
+        if (!TextUtils.isEmpty(sharedMunicipal) && etMunicipalMixed != null && TextUtils.isEmpty(etMunicipalMixed.getText())) {
+            etMunicipalMixed.setText(sharedMunicipal);
+        }
+        if (!TextUtils.isEmpty(sharedStreet) && etStreetMixed != null && TextUtils.isEmpty(etStreetMixed.getText())) {
+            etStreetMixed.setText(sharedStreet);
+        }
+    }
+
+    private void saveOriginalValues() {
+        originalValues.clear();
+        originalFarmType = currentFarmType;
+
+        // Save current form values as original
+        if ("Crop".equals(currentFarmType)) {
+            saveOriginalCropValues();
+        } else if ("Livestock".equals(currentFarmType)) {
+            saveOriginalLivestockValues();
+        } else if ("Mixed".equals(currentFarmType)) {
+            saveOriginalMixedValues();
+        }
+
+        hasUnsavedChanges = false;
+    }
+
+    private void saveOriginalCropValues() {
+        if (etMunicipalCrop != null) originalValues.put("municipal_crop", etMunicipalCrop.getText().toString());
+        if (etStreetCrop != null) originalValues.put("street_crop", etStreetCrop.getText().toString());
+        if (spinnerCropsGrown != null) originalValues.put("crops_grown", String.valueOf(spinnerCropsGrown.getSelectedItemPosition()));
+        if (etOtherCrop != null) originalValues.put("other_crop", etOtherCrop.getText().toString());
+        if (etLotSizeValue != null) originalValues.put("lot_size_value", etLotSizeValue.getText().toString());
+        if (spinnerUnit != null) originalValues.put("unit", String.valueOf(spinnerUnit.getSelectedItemPosition()));
+    }
+
+    private void saveOriginalLivestockValues() {
+        if (etMunicipalLivestock != null) originalValues.put("municipal_livestock", etMunicipalLivestock.getText().toString());
+        if (etStreetLivestock != null) originalValues.put("street_livestock", etStreetLivestock.getText().toString());
+        if (spinnerLivestockType != null) originalValues.put("livestock_type", String.valueOf(spinnerLivestockType.getSelectedItemPosition()));
+        if (etOtherLivestock != null) originalValues.put("other_livestock", etOtherLivestock.getText().toString());
+        if (etAnimalCount != null) originalValues.put("animal_count", etAnimalCount.getText().toString());
+    }
+
+    private void saveOriginalMixedValues() {
+        if (etMunicipalMixed != null) originalValues.put("municipal_mixed", etMunicipalMixed.getText().toString());
+        if (etStreetMixed != null) originalValues.put("street_mixed", etStreetMixed.getText().toString());
+        if (spinnerCropsGrownMixed != null) originalValues.put("crops_grown_mixed", String.valueOf(spinnerCropsGrownMixed.getSelectedItemPosition()));
+        if (etOtherCropMixed != null) originalValues.put("other_crop_mixed", etOtherCropMixed.getText().toString());
+        if (spinnerLivestockTypeMixed != null) originalValues.put("livestock_type_mixed", String.valueOf(spinnerLivestockTypeMixed.getSelectedItemPosition()));
+        if (etOtherLivestockMixed != null) originalValues.put("other_livestock_mixed", etOtherLivestockMixed.getText().toString());
+        if (etLotSizeValueMixed != null) originalValues.put("lot_size_value_mixed", etLotSizeValueMixed.getText().toString());
+        if (etAnimalCountMixed != null) originalValues.put("animal_count_mixed", etAnimalCountMixed.getText().toString());
+        if (spinnerUnitMixed != null) originalValues.put("unit_mixed", String.valueOf(spinnerUnitMixed.getSelectedItemPosition()));
+    }
+
+    private boolean validateForm() {
+        if ("Crop".equals(currentFarmType)) {
+            return validateCropForm();
+        } else if ("Livestock".equals(currentFarmType)) {
+            return validateLivestockForm();
+        } else if ("Mixed".equals(currentFarmType)) {
+            return validateMixedForm();
+        }
+        return false;
     }
 
     private boolean validateCropForm() {
-        if (TextUtils.isEmpty(etMunicipalCrop.getText())) {
+        boolean isValid = true;
+
+        if (etMunicipalCrop != null && TextUtils.isEmpty(etMunicipalCrop.getText())) {
             etMunicipalCrop.setError("Municipal is required");
-            return false;
+            isValid = false;
         }
 
-        if (TextUtils.isEmpty(etStreetCrop.getText())) {
-            etStreetCrop.setError("Street address is required");
-            return false;
+        if (etStreetCrop != null && TextUtils.isEmpty(etStreetCrop.getText())) {
+            etStreetCrop.setError("Street is required");
+            isValid = false;
         }
 
-        if (spinnerCropsGrown.getSelectedItemPosition() == 0) {
-            Toast.makeText(this, "Please select crops grown", Toast.LENGTH_SHORT).show();
-            return false;
+        if (spinnerCropsGrown != null && spinnerCropsGrown.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Please select a crop", Toast.LENGTH_SHORT).show();
+            isValid = false;
         }
 
-        if (spinnerCropsGrown.getSelectedItemPosition() == cropOptions.length - 1 &&
-                TextUtils.isEmpty(etOtherCrop.getText())) {
-            etOtherCrop.setError("Please specify other crop");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(etLotSizeValue.getText())) {
-            etLotSizeValue.setError("Lot size is required");
-            return false;
-        }
-
-        try {
-            double lotSize = Double.parseDouble(etLotSizeValue.getText().toString());
-            if (lotSize <= 0) {
-                etLotSizeValue.setError("Lot size must be greater than 0");
-                return false;
+        if (spinnerCropsGrown != null && spinnerCropsGrown.getSelectedItemPosition() == cropOptions.length - 1) {
+            if (etOtherCrop != null && TextUtils.isEmpty(etOtherCrop.getText())) {
+                etOtherCrop.setError("Please specify the crop");
+                isValid = false;
             }
-        } catch (NumberFormatException e) {
-            etLotSizeValue.setError("Invalid lot size");
-            return false;
         }
 
-        return true;
+        if (etLotSizeValue != null && TextUtils.isEmpty(etLotSizeValue.getText())) {
+            etLotSizeValue.setError("Lot size is required");
+            isValid = false;
+        }
+
+        return isValid;
     }
 
     private boolean validateLivestockForm() {
-        if (TextUtils.isEmpty(etMunicipalLivestock.getText())) {
+        boolean isValid = true;
+
+        if (etMunicipalLivestock != null && TextUtils.isEmpty(etMunicipalLivestock.getText())) {
             etMunicipalLivestock.setError("Municipal is required");
-            return false;
+            isValid = false;
         }
 
-        if (TextUtils.isEmpty(etStreetLivestock.getText())) {
-            etStreetLivestock.setError("Street address is required");
-            return false;
+        if (etStreetLivestock != null && TextUtils.isEmpty(etStreetLivestock.getText())) {
+            etStreetLivestock.setError("Street is required");
+            isValid = false;
         }
 
-        if (spinnerLivestockType.getSelectedItemPosition() == 0) {
-            Toast.makeText(this, "Please select livestock type", Toast.LENGTH_SHORT).show();
-            return false;
+        if (spinnerLivestockType != null && spinnerLivestockType.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Please select a livestock type", Toast.LENGTH_SHORT).show();
+            isValid = false;
         }
 
-        if (spinnerLivestockType.getSelectedItemPosition() == livestockOptions.length - 1 &&
-                TextUtils.isEmpty(etOtherLivestock.getText())) {
-            etOtherLivestock.setError("Please specify other livestock");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(etAnimalCount.getText())) {
-            etAnimalCount.setError("Number of animals is required");
-            return false;
-        }
-
-        try {
-            int count = Integer.parseInt(etAnimalCount.getText().toString());
-            if (count <= 0) {
-                etAnimalCount.setError("Number of animals must be greater than 0");
-                return false;
+        if (spinnerLivestockType != null && spinnerLivestockType.getSelectedItemPosition() == livestockOptions.length - 1) {
+            if (etOtherLivestock != null && TextUtils.isEmpty(etOtherLivestock.getText())) {
+                etOtherLivestock.setError("Please specify the livestock type");
+                isValid = false;
             }
-        } catch (NumberFormatException e) {
-            etAnimalCount.setError("Invalid number");
-            return false;
         }
 
-        return true;
+        if (etAnimalCount != null && TextUtils.isEmpty(etAnimalCount.getText())) {
+            etAnimalCount.setError("Animal count is required");
+            isValid = false;
+        }
+
+        return isValid;
     }
 
     private boolean validateMixedForm() {
-        if (TextUtils.isEmpty(etMunicipalMixed.getText())) {
+        boolean isValid = true;
+
+        if (etMunicipalMixed != null && TextUtils.isEmpty(etMunicipalMixed.getText())) {
             etMunicipalMixed.setError("Municipal is required");
-            return false;
+            isValid = false;
         }
 
-        if (TextUtils.isEmpty(etStreetMixed.getText())) {
-            etStreetMixed.setError("Street address is required");
-            return false;
+        if (etStreetMixed != null && TextUtils.isEmpty(etStreetMixed.getText())) {
+            etStreetMixed.setError("Street is required");
+            isValid = false;
         }
 
-        if (spinnerCropsGrownMixed.getSelectedItemPosition() == 0) {
-            Toast.makeText(this, "Please select crops grown", Toast.LENGTH_SHORT).show();
-            return false;
+        if (spinnerCropsGrownMixed != null && spinnerCropsGrownMixed.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Please select a crop", Toast.LENGTH_SHORT).show();
+            isValid = false;
         }
 
-        if (spinnerCropsGrownMixed.getSelectedItemPosition() == cropOptions.length - 1 &&
-                TextUtils.isEmpty(etOtherCropMixed.getText())) {
-            etOtherCropMixed.setError("Please specify other crop");
-            return false;
+        if (spinnerCropsGrownMixed != null && spinnerCropsGrownMixed.getSelectedItemPosition() == cropOptions.length - 1) {
+            if (etOtherCropMixed != null && TextUtils.isEmpty(etOtherCropMixed.getText())) {
+                etOtherCropMixed.setError("Please specify the crop");
+                isValid = false;
+            }
         }
 
-        if (TextUtils.isEmpty(etLotSizeValueMixed.getText())) {
+        if (spinnerLivestockTypeMixed != null && spinnerLivestockTypeMixed.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Please select a livestock type", Toast.LENGTH_SHORT).show();
+            isValid = false;
+        }
+
+        if (spinnerLivestockTypeMixed != null && spinnerLivestockTypeMixed.getSelectedItemPosition() == livestockOptions.length - 1) {
+            if (etOtherLivestockMixed != null && TextUtils.isEmpty(etOtherLivestockMixed.getText())) {
+                etOtherLivestockMixed.setError("Please specify the livestock type");
+                isValid = false;
+            }
+        }
+
+        if (etLotSizeValueMixed != null && TextUtils.isEmpty(etLotSizeValueMixed.getText())) {
             etLotSizeValueMixed.setError("Lot size is required");
-            return false;
+            isValid = false;
         }
 
-        try {
-            double lotSize = Double.parseDouble(etLotSizeValueMixed.getText().toString());
-            if (lotSize <= 0) {
-                etLotSizeValueMixed.setError("Lot size must be greater than 0");
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            etLotSizeValueMixed.setError("Invalid lot size");
-            return false;
+        if (etAnimalCountMixed != null && TextUtils.isEmpty(etAnimalCountMixed.getText())) {
+            etAnimalCountMixed.setError("Animal count is required");
+            isValid = false;
         }
 
-        if (spinnerLivestockTypeMixed.getSelectedItemPosition() == 0) {
-            Toast.makeText(this, "Please select livestock type", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        if (spinnerLivestockTypeMixed.getSelectedItemPosition() == livestockOptions.length - 1 &&
-                TextUtils.isEmpty(etOtherLivestockMixed.getText())) {
-            etOtherLivestockMixed.setError("Please specify other livestock");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(etAnimalCountMixed.getText())) {
-            etAnimalCountMixed.setError("Number of animals is required");
-            return false;
-        }
-
-        try {
-            int count = Integer.parseInt(etAnimalCountMixed.getText().toString());
-            if (count <= 0) {
-                etAnimalCountMixed.setError("Number of animals must be greater than 0");
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            etAnimalCountMixed.setError("Invalid number");
-            return false;
-        }
-
-        return true;
+        return isValid;
     }
 
     private void saveAllFarmerInformation() {
-        if (farmerDocumentId == null || farmerDocumentId.isEmpty()) {
-            Toast.makeText(this, "Cannot save: Farmer document not found", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (progressOverlay != null) {
             progressOverlay.setVisibility(View.VISIBLE);
         }
@@ -1020,40 +910,80 @@ public class EditFarmInformationActivity extends AppCompatActivity {
             btnSave.setEnabled(false);
         }
 
-        // Save to FarmType subcollection based on current farm type
-        switch (currentFarmType) {
-            case "Crop":
-                saveCropDataToSubcollection();
-                break;
-            case "Livestock":
-                saveLivestockDataToSubcollection();
-                break;
-            case "Mixed":
-                saveMixedDataToSubcollection();
-                break;
+        // First update basic farmer information
+        updateBasicFarmerInformation();
+    }
+
+    private void updateBasicFarmerInformation() {
+        Map<String, Object> farmerUpdates = new HashMap<>();
+
+        // Update basic information if provided
+        if (firstName != null && !firstName.isEmpty()) {
+            farmerUpdates.put("firstName", firstName);
+        }
+        if (middleName != null && !middleName.isEmpty()) {
+            farmerUpdates.put("middleInitial", middleName);
+        }
+        if (lastName != null && !lastName.isEmpty()) {
+            farmerUpdates.put("lastName", lastName);
+        }
+        if (contactNumber != null && !contactNumber.isEmpty()) {
+            farmerUpdates.put("contactNumber", contactNumber);
+        }
+
+        // Add timestamp
+        farmerUpdates.put("lastUpdated", Timestamp.now());
+
+        DocumentReference farmerRef = db.collection("Barangays")
+                .document(barangay)
+                .collection("Farmers")
+                .document(farmerDocumentId);
+
+        farmerRef.update(farmerUpdates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Basic farmer information updated successfully");
+                    // Now save farm type information
+                    saveFarmTypeInformation();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating basic farmer information", e);
+                    onSaveError(e);
+                });
+    }
+
+    private void saveFarmTypeInformation() {
+        if ("Crop".equals(currentFarmType)) {
+            saveCropInformation();
+        } else if ("Livestock".equals(currentFarmType)) {
+            saveLivestockInformation();
+        } else if ("Mixed".equals(currentFarmType)) {
+            saveMixedInformation();
         }
     }
 
-    private void saveCropDataToSubcollection() {
-        Map<String, Object> cropData = new HashMap<>();
-        cropData.put("barangay", barangay);
-        cropData.put("farmType", "Crop");
-        cropData.put("farmerId", farmerId);
-        cropData.put("farmerName", farmerName);
-        cropData.put("municipal", etMunicipalCrop.getText().toString().trim());
-        cropData.put("street", etStreetCrop.getText().toString().trim());
-        cropData.put("lotSizeValue", etLotSizeValue.getText().toString().trim());
-        cropData.put("lotSizeUnit", unitOptions[spinnerUnit.getSelectedItemPosition()]);
-        cropData.put("lotSize", etLotSizeValue.getText().toString().trim() + " " + unitOptions[spinnerUnit.getSelectedItemPosition()]);
+    private void saveCropInformation() {
+        Map<String, Object> cropInfo = new HashMap<>();
+        cropInfo.put("municipal", etMunicipalCrop.getText().toString().trim());
+        cropInfo.put("street", etStreetCrop.getText().toString().trim());
+        cropInfo.put("barangay", barangay);
 
-        // Get crop value
-        String cropValue;
+        // Get crop type
+        String cropType;
         if (spinnerCropsGrown.getSelectedItemPosition() == cropOptions.length - 1) {
-            cropValue = etOtherCrop.getText().toString().trim();
+            cropType = etOtherCrop.getText().toString().trim();
         } else {
-            cropValue = cropOptions[spinnerCropsGrown.getSelectedItemPosition()];
+            cropType = cropOptions[spinnerCropsGrown.getSelectedItemPosition()];
         }
-        cropData.put("cropsGrown", cropValue);
+        cropInfo.put("cropsGrown", cropType);
+
+        cropInfo.put("lotSizeValue", etLotSizeValue.getText().toString().trim());
+        cropInfo.put("lotSizeUnit", unitOptions[spinnerUnit.getSelectedItemPosition()]);
+
+        // Create combined lot size
+        String lotSize = etLotSizeValue.getText().toString().trim() + " " + unitOptions[spinnerUnit.getSelectedItemPosition()];
+        cropInfo.put("lotSize", lotSize);
+
+        cropInfo.put("lastUpdated", Timestamp.now());
 
         DocumentReference cropRef = db.collection("Barangays")
                 .document(barangay)
@@ -1062,40 +992,42 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 .collection("FarmType")
                 .document("Crop");
 
-        cropRef.set(cropData)
+        cropRef.set(cropInfo, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> {
-                    // Delete Livestock document if it exists
-                    deleteLivestockDocument();
+                    Log.d(TAG, "Crop information saved successfully");
+                    // Delete other farm type documents if they exist
+                    deleteOtherFarmTypes("Crop");
                 })
                 .addOnFailureListener(e -> {
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    if (btnSave != null) {
-                        btnSave.setEnabled(true);
-                    }
-                    Log.e(TAG, "Error saving crop data", e);
-                    Toast.makeText(this, "Error saving crop information", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error saving crop information", e);
+                    onSaveError(e);
                 });
     }
 
-    private void saveLivestockDataToSubcollection() {
-        Map<String, Object> livestockData = new HashMap<>();
-        livestockData.put("barangay", barangay);
-        livestockData.put("farmerId", farmerId);
-        livestockData.put("farmerName", farmerName);
-        livestockData.put("municipal", etMunicipalLivestock.getText().toString().trim());
-        livestockData.put("street", etStreetLivestock.getText().toString().trim());
-        livestockData.put("livestockCount", Integer.parseInt(etAnimalCount.getText().toString().trim()));
+    private void saveLivestockInformation() {
+        Map<String, Object> livestockInfo = new HashMap<>();
+        livestockInfo.put("municipal", etMunicipalLivestock.getText().toString().trim());
+        livestockInfo.put("street", etStreetLivestock.getText().toString().trim());
+        livestockInfo.put("barangay", barangay);
 
-        // Get livestock value
-        String livestockValue;
+        // Get livestock type
+        String livestockType;
         if (spinnerLivestockType.getSelectedItemPosition() == livestockOptions.length - 1) {
-            livestockValue = etOtherLivestock.getText().toString().trim();
+            livestockType = etOtherLivestock.getText().toString().trim();
         } else {
-            livestockValue = livestockOptions[spinnerLivestockType.getSelectedItemPosition()];
+            livestockType = livestockOptions[spinnerLivestockType.getSelectedItemPosition()];
         }
-        livestockData.put("livestockType", livestockValue);
+        livestockInfo.put("livestockType", livestockType);
+
+        String animalCountStr = etAnimalCount.getText().toString().trim();
+        try {
+            int animalCount = Integer.parseInt(animalCountStr);
+            livestockInfo.put("livestockCount", animalCount);
+        } catch (NumberFormatException e) {
+            livestockInfo.put("livestockCount", animalCountStr);
+        }
+
+        livestockInfo.put("lastUpdated", Timestamp.now());
 
         DocumentReference livestockRef = db.collection("Barangays")
                 .document(barangay)
@@ -1104,59 +1036,67 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 .collection("FarmType")
                 .document("Livestock");
 
-        livestockRef.set(livestockData)
+        livestockRef.set(livestockInfo, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> {
-                    // Delete Crop document if it exists
-                    deleteCropDocument();
+                    Log.d(TAG, "Livestock information saved successfully");
+                    // Delete other farm type documents if they exist
+                    deleteOtherFarmTypes("Livestock");
                 })
                 .addOnFailureListener(e -> {
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    if (btnSave != null) {
-                        btnSave.setEnabled(true);
-                    }
-                    Log.e(TAG, "Error saving livestock data", e);
-                    Toast.makeText(this, "Error saving livestock information", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error saving livestock information", e);
+                    onSaveError(e);
                 });
     }
 
-    private void saveMixedDataToSubcollection() {
-        // For mixed farming, save both crop and livestock data
-        Map<String, Object> cropData = new HashMap<>();
-        cropData.put("barangay", barangay);
-        cropData.put("farmType", "Mixed");
-        cropData.put("farmerId", farmerId);
-        cropData.put("farmerName", farmerName);
-        cropData.put("municipal", etMunicipalMixed.getText().toString().trim());
-        cropData.put("street", etStreetMixed.getText().toString().trim());
-        cropData.put("lotSizeValue", etLotSizeValueMixed.getText().toString().trim());
-        cropData.put("lotSizeUnit", unitOptions[spinnerUnitMixed.getSelectedItemPosition()]);
+    private void saveMixedInformation() {
+        // Save crop information
+        Map<String, Object> cropInfo = new HashMap<>();
+        cropInfo.put("municipal", etMunicipalMixed.getText().toString().trim());
+        cropInfo.put("street", etStreetMixed.getText().toString().trim());
+        cropInfo.put("barangay", barangay);
 
-        String cropValue;
+        // Get crop type
+        String cropType;
         if (spinnerCropsGrownMixed.getSelectedItemPosition() == cropOptions.length - 1) {
-            cropValue = etOtherCropMixed.getText().toString().trim();
+            cropType = etOtherCropMixed.getText().toString().trim();
         } else {
-            cropValue = cropOptions[spinnerCropsGrownMixed.getSelectedItemPosition()];
+            cropType = cropOptions[spinnerCropsGrownMixed.getSelectedItemPosition()];
         }
-        cropData.put("cropsGrown", cropValue);
+        cropInfo.put("cropsGrown", cropType);
 
-        Map<String, Object> livestockData = new HashMap<>();
-        livestockData.put("barangay", barangay);
-        livestockData.put("farmType", "Mixed");
-        livestockData.put("farmerId", farmerId);
-        livestockData.put("farmerName", farmerName);
-        livestockData.put("municipal", etMunicipalMixed.getText().toString().trim());
-        livestockData.put("street", etStreetMixed.getText().toString().trim());
-        livestockData.put("livestockCount", Integer.parseInt(etAnimalCountMixed.getText().toString().trim()));
+        cropInfo.put("lotSizeValue", etLotSizeValueMixed.getText().toString().trim());
+        cropInfo.put("lotSizeUnit", unitOptions[spinnerUnitMixed.getSelectedItemPosition()]);
 
-        String livestockValue;
+        // Create combined lot size
+        String lotSize = etLotSizeValueMixed.getText().toString().trim() + " " + unitOptions[spinnerUnitMixed.getSelectedItemPosition()];
+        cropInfo.put("lotSize", lotSize);
+
+        cropInfo.put("lastUpdated", Timestamp.now());
+
+        // Save livestock information
+        Map<String, Object> livestockInfo = new HashMap<>();
+        livestockInfo.put("municipal", etMunicipalMixed.getText().toString().trim());
+        livestockInfo.put("street", etStreetMixed.getText().toString().trim());
+        livestockInfo.put("barangay", barangay);
+
+        // Get livestock type
+        String livestockType;
         if (spinnerLivestockTypeMixed.getSelectedItemPosition() == livestockOptions.length - 1) {
-            livestockValue = etOtherLivestockMixed.getText().toString().trim();
+            livestockType = etOtherLivestockMixed.getText().toString().trim();
         } else {
-            livestockValue = livestockOptions[spinnerLivestockTypeMixed.getSelectedItemPosition()];
+            livestockType = livestockOptions[spinnerLivestockTypeMixed.getSelectedItemPosition()];
         }
-        livestockData.put("livestockType", livestockValue);
+        livestockInfo.put("livestockType", livestockType);
+
+        String animalCountStr = etAnimalCountMixed.getText().toString().trim();
+        try {
+            int animalCount = Integer.parseInt(animalCountStr);
+            livestockInfo.put("livestockCount", animalCount);
+        } catch (NumberFormatException e) {
+            livestockInfo.put("livestockCount", animalCountStr);
+        }
+
+        livestockInfo.put("lastUpdated", Timestamp.now());
 
         // Save both documents
         DocumentReference cropRef = db.collection("Barangays")
@@ -1173,61 +1113,53 @@ public class EditFarmInformationActivity extends AppCompatActivity {
                 .collection("FarmType")
                 .document("Livestock");
 
-        cropRef.set(cropData)
+        // Save crop data first
+        cropRef.set(cropInfo, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> {
-                    livestockRef.set(livestockData)
+                    Log.d(TAG, "Mixed crop information saved successfully");
+                    // Save livestock data
+                    livestockRef.set(livestockInfo, SetOptions.merge())
                             .addOnSuccessListener(aVoid2 -> {
+                                Log.d(TAG, "Mixed livestock information saved successfully");
                                 onSaveSuccess();
                             })
                             .addOnFailureListener(e -> {
-                                if (progressOverlay != null) {
-                                    progressOverlay.setVisibility(View.GONE);
-                                }
-                                if (btnSave != null) {
-                                    btnSave.setEnabled(true);
-                                }
-                                Log.e(TAG, "Error saving livestock data for mixed farm", e);
-                                Toast.makeText(this, "Error saving livestock information", Toast.LENGTH_SHORT).show();
+                                Log.e(TAG, "Error saving mixed livestock information", e);
+                                onSaveError(e);
                             });
                 })
                 .addOnFailureListener(e -> {
-                    if (progressOverlay != null) {
-                        progressOverlay.setVisibility(View.GONE);
-                    }
-                    if (btnSave != null) {
-                        btnSave.setEnabled(true);
-                    }
-                    Log.e(TAG, "Error saving crop data for mixed farm", e);
-                    Toast.makeText(this, "Error saving crop information", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error saving mixed crop information", e);
+                    onSaveError(e);
                 });
     }
 
-    private void deleteCropDocument() {
-        db.collection("Barangays")
-                .document(barangay)
-                .collection("Farmers")
-                .document(farmerDocumentId)
-                .collection("FarmType")
-                .document("Crop")
-                .delete()
-                .addOnCompleteListener(task -> {
-                    onSaveSuccess();
-                });
+    private void deleteOtherFarmTypes(String keepType) {
+        String[] farmTypes = {"Crop", "Livestock"};
+
+        for (String farmType : farmTypes) {
+            if (!farmType.equals(keepType)) {
+                db.collection("Barangays")
+                        .document(barangay)
+                        .collection("Farmers")
+                        .document(farmerDocumentId)
+                        .collection("FarmType")
+                        .document(farmType)
+                        .delete()
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Deleted " + farmType + " farm type document");
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.w(TAG, "Could not delete " + farmType + " farm type document", e);
+                        });
+            }
+        }
+
+        // After cleanup, call success
+        onSaveSuccess();
     }
 
-    private void deleteLivestockDocument() {
-        db.collection("Barangays")
-                .document(barangay)
-                .collection("Farmers")
-                .document(farmerDocumentId)
-                .collection("FarmType")
-                .document("Livestock")
-                .delete()
-                .addOnCompleteListener(task -> {
-                    onSaveSuccess();
-                });
-    }
-
+    // FIXED: Return result instead of navigating to new activity
     private void onSaveSuccess() {
         if (progressOverlay != null) {
             progressOverlay.setVisibility(View.GONE);
@@ -1239,10 +1171,89 @@ public class EditFarmInformationActivity extends AppCompatActivity {
         // Reset unsaved changes flag after successful save
         hasUnsavedChanges = false;
 
+        // Log the farmer edit activity using ActivityLogger
+        if (barangay != null && farmerName != null) {
+            Log.d(TAG, "Logging farmer edit activity for: " + farmerName + " in " + barangay);
+            ActivityLogger.logFarmerEdited(barangay, farmerName);
+        } else {
+            Log.w(TAG, "Cannot log activity - missing barangay or farmer name");
+        }
+
         Toast.makeText(this, "Farm information updated successfully", Toast.LENGTH_SHORT).show();
 
-        // Navigate to FarmersDetailsActivity after successful save
-        navigateToFarmersDetailsActivity();
+        // FIXED: Return result instead of creating new intent
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("updated", true);
+        resultIntent.putExtra("farmerId", farmerId);
+        resultIntent.putExtra("farmerName", farmerName);
+        resultIntent.putExtra("barangay", barangay);
+        resultIntent.putExtra("farmerDocumentId", farmerDocumentId);
+        setResult(RESULT_OK, resultIntent);
+        finish();
+    }
+
+    private void onSaveError(Exception e) {
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(View.GONE);
+        }
+        if (btnSave != null) {
+            btnSave.setEnabled(true);
+        }
+
+        Log.e(TAG, "Error saving farmer information", e);
+        Toast.makeText(this, "Error saving information: " + e.getMessage(), Toast.LENGTH_LONG).show();
+
+        new AlertDialog.Builder(this)
+                .setTitle("Save Failed")
+                .setMessage("Failed to save farmer information. Would you like to try again?")
+                .setPositiveButton("Retry", (dialog, which) -> {
+                    if (validateForm()) {
+                        saveAllFarmerInformation();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    // FIXED: Handle back press properly
+    private void handleBackPress() {
+        if (hasUnsavedChanges) {
+            showUnsavedChangesDialog();
+        } else {
+            setResult(RESULT_CANCELED);
+            finish();
+        }
+    }
+
+    // FIXED: Updated unsaved changes dialog
+    private void showUnsavedChangesDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Unsaved Changes")
+                .setMessage("You have unsaved changes. Do you want to save them before leaving?")
+                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (validateForm()) {
+                            saveAllFarmerInformation();
+                        }
+                    }
+                })
+                .setNegativeButton("Discard", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        hasUnsavedChanges = false;
+                        setResult(RESULT_CANCELED);
+                        finish();
+                    }
+                })
+                .setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setCancelable(false)
+                .show();
     }
 
     @Override

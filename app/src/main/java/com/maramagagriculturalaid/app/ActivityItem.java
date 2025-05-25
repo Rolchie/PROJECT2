@@ -1,4 +1,4 @@
-package com.maramagagriculturalaid.app.FarmersData;
+package com.maramagagriculturalaid.app;
 
 public class ActivityItem {
     private String type; // "farmer_added", "farmer_edited", "farmer_removed", "subsidy_added"

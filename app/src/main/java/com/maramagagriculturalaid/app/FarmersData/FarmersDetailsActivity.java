@@ -14,11 +14,14 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.maramagagriculturalaid.app.R;
+import com.maramagagriculturalaid.app.ActivityLogger;
 
 import java.util.Map;
 import java.text.SimpleDateFormat;
@@ -33,7 +36,7 @@ public class FarmersDetailsActivity extends AppCompatActivity {
 
     private Button btnDelete, btnEdit;
     private ProgressBar progressBar;
-    private String documentId, currentBarangay;
+    private String documentId, currentBarangay, farmerId;
 
     // UI Components for farmer details
     private TextView tvFarmerId, tvFullName, tvPhoneNumber, tvBirthday, tvAddress;
@@ -46,6 +49,26 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_farmers_details);
 
         // Initialize views
+        initializeViews();
+
+        // Get data from intent
+        extractIntentData();
+
+        // Validate required data
+        if (documentId == null || documentId.isEmpty()) {
+            Toast.makeText(this, "Error: No farmer ID provided", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Set button click listeners
+        setupClickListeners();
+
+        // Load farmer data
+        loadFarmerData();
+    }
+
+    private void initializeViews() {
         btnDelete = findViewById(R.id.btn_delete);
         btnEdit = findViewById(R.id.btn_edit);
         progressBar = findViewById(R.id.progress_bar);
@@ -68,125 +91,112 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         // Initialize back button
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> finish());
+    }
 
-        // Get data from intent
+    private void extractIntentData() {
         documentId = getIntent().getStringExtra("documentId");
-        currentBarangay = getIntent().getStringExtra("barangay");
+        currentBarangay = getIntent().getStringExtra("barangayId");
+        farmerId = getIntent().getStringExtra("farmerId");
 
-        // Validate required data
-        if (documentId == null || documentId.isEmpty()) {
-            Toast.makeText(this, "Error: No farmer ID provided", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
+        // Fallback for legacy intent extras
+        if (currentBarangay == null) {
+            currentBarangay = getIntent().getStringExtra("barangay");
         }
 
-        // Set button click listeners
+        Log.d(TAG, "Intent data - documentId: " + documentId + ", barangayId: " + currentBarangay + ", farmerId: " + farmerId);
+    }
+
+    private void setupClickListeners() {
         btnDelete.setOnClickListener(v -> deleteFarmer());
         btnEdit.setOnClickListener(v -> editFarmer());
-
-        // Load farmer data
-        loadFarmerData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh data
+        // Force refresh data when returning from edit
+        Log.d(TAG, "onResume called - refreshing farmer data");
         loadFarmerData();
     }
 
+    // FIXED: Enhanced onActivityResult
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == EDIT_FARMER_REQUEST_CODE && resultCode == RESULT_OK) {
-            // Farmer was successfully edited, refresh the data
-            loadFarmerData();
-            Toast.makeText(this, "Farmer information updated successfully", Toast.LENGTH_SHORT).show();
+        if (requestCode == EDIT_FARMER_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                // Farmer was successfully edited, refresh the data
+                Log.d(TAG, "Farmer edit completed successfully, refreshing data");
+                loadFarmerData();
+                Toast.makeText(this, "Farmer information updated successfully", Toast.LENGTH_SHORT).show();
+            } else if (resultCode == RESULT_CANCELED) {
+                Log.d(TAG, "Farmer edit was cancelled");
+            }
         }
     }
 
+    // FIXED: Enhanced editFarmer method
     private void editFarmer() {
-        Intent intent = new Intent(this, EditFarmerActivity.class);
+        try {
+            Intent intent = new Intent(this, EditFarmerActivity.class);
 
-        // Pass the document ID and barangay to the edit activity
-        intent.putExtra("documentId", documentId);
-        intent.putExtra("barangay", currentBarangay);
+            // Pass the correct data to EditFarmerActivity
+            intent.putExtra("farmerId", farmerId);
+            intent.putExtra("farmerName", tvFullName.getText().toString());
+            intent.putExtra("barangay", currentBarangay);
+            intent.putExtra("farmerDocumentId", documentId);
 
-        // Optionally pass current farmer data to pre-populate the edit form
-        intent.putExtra("farmerId", tvFarmerId.getText().toString());
-        intent.putExtra("fullName", tvFullName.getText().toString());
-        intent.putExtra("phoneNumber", tvPhoneNumber.getText().toString());
-        intent.putExtra("birthday", tvBirthday.getText().toString());
-        intent.putExtra("address", tvAddress.getText().toString());
-        intent.putExtra("farmType", tvFarmType.getText().toString());
-        intent.putExtra("cropsGrown", tvCropsGrown.getText().toString());
-        intent.putExtra("lotSize", tvLotSize.getText().toString());
-        intent.putExtra("livestock", tvLivestock != null ? tvLivestock.getText().toString() : "");
-        intent.putExtra("numLivestock", tvNumLivestock != null ? tvNumLivestock.getText().toString() : "");
+            Log.d(TAG, "Starting EditFarmerActivity with - farmerId: " + farmerId +
+                    ", barangay: " + currentBarangay + ", documentId: " + documentId);
 
-        startActivityForResult(intent, EDIT_FARMER_REQUEST_CODE);
+            startActivityForResult(intent, EDIT_FARMER_REQUEST_CODE);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting EditFarmerActivity", e);
+            Toast.makeText(this, "Error opening edit screen", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadFarmerData() {
         showLoading(true);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Try loading from Barangay collection first
+        // Load from Barangay collection structure
         if (currentBarangay != null && !currentBarangay.isEmpty()) {
+            Log.d(TAG, "Loading farmer from barangay: " + currentBarangay + ", document: " + documentId);
+
             db.collection("Barangays").document(currentBarangay)
                     .collection("Farmers").document(documentId)
                     .get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
+                            Log.d(TAG, "Farmer document found in barangay collection");
                             displayFarmerData(documentSnapshot);
                             // Load farm type data separately
-                            loadFarmTypeData(db, "Barangays", currentBarangay, "Farmers", documentId);
+                            loadFarmTypeData(db, currentBarangay, documentId);
                         } else {
-                            // Fallback to root collection
-                            loadFromRootCollection(db);
+                            Log.w(TAG, "Farmer document not found in barangay collection");
+                            showLoading(false);
+                            Toast.makeText(this, "Farmer not found", Toast.LENGTH_SHORT).show();
+                            finish();
                         }
                     })
                     .addOnFailureListener(e -> {
-                        Log.w(TAG, "Failed to load from barangay collection, trying root", e);
-                        // Fallback to root collection
-                        loadFromRootCollection(db);
+                        Log.e(TAG, "Failed to load farmer from barangay collection", e);
+                        handleLoadError(e);
                     });
         } else {
-            // Directly query root collection
-            loadFromRootCollection(db);
+            Log.e(TAG, "No barangay ID provided");
+            showLoading(false);
+            Toast.makeText(this, "Error: No barangay information available", Toast.LENGTH_SHORT).show();
+            finish();
         }
     }
 
-    private void loadFromRootCollection(FirebaseFirestore db) {
-        db.collection("Farmers").document(documentId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        displayFarmerData(documentSnapshot);
-                        // Load farm type data separately
-                        loadFarmTypeData(db, "Farmers", null, null, documentId);
-                    } else {
-                        showLoading(false);
-                        Log.e(TAG, "Document does not exist: " + documentId);
-                        Toast.makeText(this, "Farmer not found", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(this::handleLoadError);
-    }
-
-    private void loadFarmTypeData(FirebaseFirestore db, String rootCollection, String barangayDoc, String farmersCollection, String farmerDoc) {
-        DocumentReference farmerRef;
-
-        if (barangayDoc != null && farmersCollection != null) {
-            // Barangay collection path
-            farmerRef = db.collection(rootCollection).document(barangayDoc)
-                    .collection(farmersCollection).document(farmerDoc);
-        } else {
-            // Root collection path
-            farmerRef = db.collection(rootCollection).document(farmerDoc);
-        }
+    // FIXED: Enhanced farm type data loading with better mixed farm detection
+    private void loadFarmTypeData(FirebaseFirestore db, String barangayId, String farmerDocId) {
+        DocumentReference farmerRef = db.collection("Barangays").document(barangayId)
+                .collection("Farmers").document(farmerDocId);
 
         Log.d(TAG, "Loading FarmType data from: " + farmerRef.getPath());
 
@@ -208,77 +218,42 @@ public class FarmersDetailsActivity extends AppCompatActivity {
                             String farmTypeId = farmTypeDoc.getId();
                             Map<String, Object> farmTypeData = farmTypeDoc.getData();
 
-                            Log.d(TAG, "=== PROCESSING FARM TYPE: " + farmTypeId + " ===");
-                            Log.d(TAG, "Farm type data: " + farmTypeData);
+                            Log.d(TAG, "Processing farm type: " + farmTypeId + " with data: " + farmTypeData);
 
                             // Add to farm type display
                             if (farmTypeBuilder.length() > 0) {
                                 farmTypeBuilder.append(", ");
                             }
-                            farmTypeBuilder.append(farmTypeId);
 
-                            // Process based on farm type
-                            String normalizedFarmType = farmTypeId.toLowerCase().trim();
-
-                            if (normalizedFarmType.contains("livestock") || normalizedFarmType.equals("livestock")) {
-                                Log.d(TAG, "Processing livestock farm type");
-                                hasLivestockData = displayLivestockData(farmTypeData);
-                            } else if (normalizedFarmType.contains("crop") || normalizedFarmType.equals("crop")) {
-                                Log.d(TAG, "Processing crop farm type");
-                                hasCropData = displayCropData(farmTypeData);
-                            } else {
-                                Log.d(TAG, "Unknown farm type, checking for any data");
-                                // Try both livestock and crop data
-                                hasLivestockData = displayLivestockData(farmTypeData);
-                                if (!hasLivestockData) {
-                                    hasCropData = displayCropData(farmTypeData);
-                                }
+                            // Check if this is a mixed farm (has both crop and livestock documents)
+                            if ("Crop".equals(farmTypeId)) {
+                                hasCropData = displayCropData(farmTypeData) || hasCropData;
+                                farmTypeBuilder.append("Crop");
+                            } else if ("Livestock".equals(farmTypeId)) {
+                                hasLivestockData = displayLivestockData(farmTypeData) || hasLivestockData;
+                                farmTypeBuilder.append("Livestock");
                             }
                         }
 
-                        // Set the combined farm type
-                        if (farmTypeBuilder.length() > 0) {
-                            tvFarmType.setText(farmTypeBuilder.toString());
+                        // Determine if this is a mixed farm
+                        String finalFarmType;
+                        if (hasCropData && hasLivestockData) {
+                            finalFarmType = "Mixed";
+                            Log.d(TAG, "Detected Mixed farm type with both crop and livestock data");
                         } else {
-                            tvFarmType.setText("N/A");
+                            finalFarmType = farmTypeBuilder.toString();
                         }
+
+                        // Set the farm type
+                        tvFarmType.setText(!finalFarmType.isEmpty() ? finalFarmType : "N/A");
 
                         // Show/hide sections based on data availability
-                        if (hasLivestockData) {
-                            if (livestockDetails != null) {
-                                livestockDetails.setVisibility(View.VISIBLE);
-                                Log.d(TAG, "Showing livestock details section");
-                            }
-                        } else {
-                            if (livestockDetails != null) {
-                                livestockDetails.setVisibility(View.GONE);
-                            }
-                        }
-
-                        if (hasCropData) {
-                            if (cropDetails != null) {
-                                cropDetails.setVisibility(View.VISIBLE);
-                                Log.d(TAG, "Showing crop details section");
-                            }
-                        } else {
-                            if (cropDetails != null) {
-                                cropDetails.setVisibility(View.GONE);
-                            }
-                        }
-
-                        // If no specific data found, hide both sections
-                        if (!hasLivestockData && !hasCropData) {
-                            Log.d(TAG, "No specific farm data found, hiding both sections");
-                            if (cropDetails != null) cropDetails.setVisibility(View.GONE);
-                            if (livestockDetails != null) livestockDetails.setVisibility(View.GONE);
-                        }
+                        updateSectionVisibility(hasCropData, hasLivestockData);
 
                     } else {
                         Log.d(TAG, "No farm type data found");
                         tvFarmType.setText("N/A");
-                        // Hide both farm detail sections
-                        if (cropDetails != null) cropDetails.setVisibility(View.GONE);
-                        if (livestockDetails != null) livestockDetails.setVisibility(View.GONE);
+                        updateSectionVisibility(false, false);
                     }
 
                     // Make buttons visible
@@ -289,114 +264,94 @@ public class FarmersDetailsActivity extends AppCompatActivity {
                     showLoading(false);
                     Log.e(TAG, "Error loading farm type data", e);
                     tvFarmType.setText("Error loading farm type");
+                    updateSectionVisibility(false, false);
+
                     // Still show buttons even if farm type loading fails
                     btnDelete.setVisibility(View.VISIBLE);
                     btnEdit.setVisibility(View.VISIBLE);
                 });
     }
 
+    private void updateSectionVisibility(boolean hasCropData, boolean hasLivestockData) {
+        if (cropDetails != null) {
+            cropDetails.setVisibility(hasCropData ? View.VISIBLE : View.GONE);
+        }
+        if (livestockDetails != null) {
+            livestockDetails.setVisibility(hasLivestockData ? View.VISIBLE : View.GONE);
+        }
+
+        Log.d(TAG, "Section visibility - Crops: " + hasCropData + ", Livestock: " + hasLivestockData);
+    }
+
     private boolean displayLivestockData(Map<String, Object> farmTypeData) {
         if (farmTypeData == null) {
-            Log.d(TAG, "No farm type data for livestock");
             return false;
         }
 
         boolean hasData = false;
 
-        // Get livestock type - try multiple field names
-        String livestockType = getFieldValue(farmTypeData, "livestockType", "livestock", "livestock_type", "animalType", "animals", "animal");
-        Log.d(TAG, "Livestock type found: " + livestockType);
-
-        if (livestockType != null && !livestockType.isEmpty()) {
-            if (tvLivestock != null) {
-                tvLivestock.setText(livestockType);
-                Log.d(TAG, "Set livestock type to: " + livestockType);
-            }
+        // Get livestock type
+        String livestockType = getFieldValue(farmTypeData, "livestockType", "livestock", "animalType");
+        if (livestockType != null && !livestockType.isEmpty() && tvLivestock != null) {
+            tvLivestock.setText(livestockType);
             hasData = true;
-        } else {
-            if (tvLivestock != null) {
-                tvLivestock.setText("N/A");
-                Log.d(TAG, "Set livestock type to: N/A");
-            }
+            Log.d(TAG, "Set livestock type: " + livestockType);
+        } else if (tvLivestock != null) {
+            tvLivestock.setText("N/A");
         }
 
-        // Get livestock count - try multiple field names including the exact one from database
-        String livestockCount = getFieldValue(farmTypeData, "livestockCount", "numLivestock", "numberOfLivestock", "livestock_count", "animalCount", "count", "quantity", "livestockNumber", "totalLivestock");
-        Log.d(TAG, "Livestock count found: " + livestockCount);
-
-        if (livestockCount != null && !livestockCount.isEmpty()) {
-            if (tvNumLivestock != null) {
-                tvNumLivestock.setText(livestockCount);
-                Log.d(TAG, "Set livestock count to: " + livestockCount);
-            }
+        // Get livestock count
+        String livestockCount = getFieldValue(farmTypeData, "livestockCount", "animalCount", "count");
+        if (livestockCount != null && !livestockCount.isEmpty() && tvNumLivestock != null) {
+            tvNumLivestock.setText(livestockCount);
             hasData = true;
-        } else {
-            if (tvNumLivestock != null) {
-                tvNumLivestock.setText("N/A");
-                Log.d(TAG, "Set livestock count to: N/A");
-            }
+            Log.d(TAG, "Set livestock count: " + livestockCount);
+        } else if (tvNumLivestock != null) {
+            tvNumLivestock.setText("N/A");
         }
 
-        Log.d(TAG, "Livestock data processing complete. Has data: " + hasData);
         return hasData;
     }
 
     private boolean displayCropData(Map<String, Object> farmTypeData) {
         if (farmTypeData == null) {
-            Log.d(TAG, "No farm type data for crops");
             return false;
         }
 
         boolean hasData = false;
 
         // Get crops grown
-        String cropsGrown = getFieldValue(farmTypeData, "cropsGrown", "crops", "crops_grown", "cropType", "cropTypes");
-        Log.d(TAG, "Crops grown found: " + cropsGrown);
-
-        if (cropsGrown != null && !cropsGrown.isEmpty()) {
-            if (tvCropsGrown != null) {
-                tvCropsGrown.setText(cropsGrown);
-                Log.d(TAG, "Set crops grown to: " + cropsGrown);
-            }
+        String cropsGrown = getFieldValue(farmTypeData, "cropsGrown", "crops", "cropType");
+        if (cropsGrown != null && !cropsGrown.isEmpty() && tvCropsGrown != null) {
+            tvCropsGrown.setText(cropsGrown);
             hasData = true;
-        } else {
-            if (tvCropsGrown != null) {
-                tvCropsGrown.setText("N/A");
-                Log.d(TAG, "Set crops grown to: N/A");
+            Log.d(TAG, "Set crops grown: " + cropsGrown);
+        } else if (tvCropsGrown != null) {
+            tvCropsGrown.setText("N/A");
+        }
+
+        // Get lot size - try to get complete lot size first, then construct from parts
+        String lotSize = getFieldValue(farmTypeData, "lotSize");
+        if (lotSize == null || lotSize.isEmpty()) {
+            String lotSizeValue = getFieldValue(farmTypeData, "lotSizeValue");
+            String lotSizeUnit = getFieldValue(farmTypeData, "lotSizeUnit");
+
+            if (lotSizeValue != null && !lotSizeValue.isEmpty()) {
+                lotSize = lotSizeValue;
+                if (lotSizeUnit != null && !lotSizeUnit.isEmpty()) {
+                    lotSize += " " + lotSizeUnit;
+                }
             }
         }
 
-        // Get lot size - combine value and unit if available
-        String lotSizeValue = getFieldValue(farmTypeData, "lotSizeValue", "lotSize", "lot_size");
-        String lotSizeUnit = getFieldValue(farmTypeData, "lotSizeUnit", "unit", "sizeUnit");
-        String combinedLotSize = "";
-
-        if (lotSizeValue != null && !lotSizeValue.isEmpty()) {
-            combinedLotSize = lotSizeValue;
-            if (lotSizeUnit != null && !lotSizeUnit.isEmpty()) {
-                combinedLotSize += " " + lotSizeUnit;
-            }
-        } else {
-            // Fallback to direct lotSize field
-            combinedLotSize = getFieldValue(farmTypeData, "lotSize", "lot_size", "farmSize", "landSize");
-        }
-
-        Log.d(TAG, "Lot size found: " + combinedLotSize);
-
-        if (combinedLotSize != null && !combinedLotSize.isEmpty()) {
-            if (tvLotSize != null) {
-                tvLotSize.setText(combinedLotSize);
-                Log.d(TAG, "Set lot size to: " + combinedLotSize);
-            }
+        if (lotSize != null && !lotSize.isEmpty() && tvLotSize != null) {
+            tvLotSize.setText(lotSize);
             hasData = true;
-        } else {
-            if (tvLotSize != null) {
-                tvLotSize.setText("N/A");
-                Log.d(TAG, "Set lot size to: N/A");
-            }
+            Log.d(TAG, "Set lot size: " + lotSize);
+        } else if (tvLotSize != null) {
+            tvLotSize.setText("N/A");
         }
 
-        Log.d(TAG, "Crop data processing complete. Has data: " + hasData);
         return hasData;
     }
 
@@ -407,28 +362,31 @@ public class FarmersDetailsActivity extends AppCompatActivity {
             return;
         }
 
-        // Get data from document
         Map<String, Object> data = farmerDoc.getData();
         if (data != null) {
-            // Log all available fields for debugging
-            Log.d(TAG, "Available fields in document: " + data.keySet().toString());
+            Log.d(TAG, "Available fields: " + data.keySet().toString());
 
-            // Populate basic information based on your database structure
-            populateField(tvFarmerId, data, "farmerId", "id", "farmer_id");
+            // Populate basic information
+            populateField(tvFarmerId, data, "farmerId", "id");
 
-            // Construct full name from available fields
+            // Construct full name
             String fullName = constructFullName(data);
-            tvFullName.setText(fullName != null && !fullName.isEmpty() ? fullName : "N/A");
+            if (tvFullName != null) {
+                tvFullName.setText(fullName != null && !fullName.isEmpty() ? fullName : "N/A");
+            }
 
-            populateField(tvPhoneNumber, data, "phoneNumber", "phone", "contactNumber", "mobileNumber");
-            populateField(tvBirthday, data, "birthday", "birthdate", "dateOfBirth", "birth_date");
+            populateField(tvPhoneNumber, data, "phoneNumber", "phone", "contactNumber");
 
-            // Construct address from available fields
+            // Handle birthday formatting
+            setBirthday(data);
+
+            // Construct address
             String address = constructAddress(data);
-            tvAddress.setText(address != null && !address.isEmpty() ? address : "N/A");
-            Log.d(TAG, "Constructed address: " + address);
+            if (tvAddress != null) {
+                tvAddress.setText(address != null && !address.isEmpty() ? address : "N/A");
+            }
 
-            // Set last updated - handle both Timestamp and String formats
+            // Set last updated
             setLastUpdated(data);
 
         } else {
@@ -436,18 +394,34 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         }
     }
 
-    private String constructFullName(Map<String, Object> data) {
-        String firstName = getFieldValue(data, "firstName", "first_name", "fname");
-        String middleInitial = getFieldValue(data, "middleInitial", "middle_initial", "middleName", "mname");
-        String lastName = getFieldValue(data, "lastName", "last_name", "surname", "lname");
-        String fullName = getFieldValue(data, "fullName", "full_name", "name");
+    private void setBirthday(Map<String, Object> data) {
+        if (tvBirthday == null) return;
 
-        // If fullName exists, use it
+        Object birthdayObj = data.get("birthday");
+        if (birthdayObj instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) birthdayObj;
+            Date date = timestamp.toDate();
+            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+            tvBirthday.setText(sdf.format(date));
+        } else if (birthdayObj instanceof String) {
+            tvBirthday.setText(birthdayObj.toString());
+        } else {
+            tvBirthday.setText("N/A");
+        }
+    }
+
+    private String constructFullName(Map<String, Object> data) {
+        // Try to get fullName first
+        String fullName = getFieldValue(data, "fullName", "name");
         if (fullName != null && !fullName.isEmpty()) {
             return fullName;
         }
 
         // Otherwise construct from parts
+        String firstName = getFieldValue(data, "firstName");
+        String middleInitial = getFieldValue(data, "middleInitial");
+        String lastName = getFieldValue(data, "lastName");
+
         StringBuilder nameBuilder = new StringBuilder();
         if (firstName != null && !firstName.isEmpty()) {
             nameBuilder.append(firstName);
@@ -455,6 +429,9 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         if (middleInitial != null && !middleInitial.isEmpty()) {
             if (nameBuilder.length() > 0) nameBuilder.append(" ");
             nameBuilder.append(middleInitial);
+            if (!middleInitial.endsWith(".")) {
+                nameBuilder.append(".");
+            }
         }
         if (lastName != null && !lastName.isEmpty()) {
             if (nameBuilder.length() > 0) nameBuilder.append(" ");
@@ -465,10 +442,9 @@ public class FarmersDetailsActivity extends AppCompatActivity {
     }
 
     private String constructAddress(Map<String, Object> data) {
-        // Only include street, barangay, and municipal as requested
-        String street = getFieldValue(data, "street", "streetAddress", "street_address", "houseNumber");
-        String barangay = getFieldValue(data, "barangay", "brgy", "barangayName");
-        String municipal = getFieldValue(data, "municipal", "municipality", "city", "town");
+        String street = getFieldValue(data, "street", "streetAddress");
+        String barangay = getFieldValue(data, "barangay");
+        String municipal = getFieldValue(data, "municipal", "municipality");
 
         StringBuilder addressBuilder = new StringBuilder();
 
@@ -486,86 +462,60 @@ public class FarmersDetailsActivity extends AppCompatActivity {
             addressBuilder.append(municipal);
         }
 
-        String result = addressBuilder.toString();
-        Log.d(TAG, "Address components - Street: " + street + ", Barangay: " + barangay +
-                ", Municipal: " + municipal + ", Result: " + result);
-
-        return result;
+        return addressBuilder.toString();
     }
 
     private void setLastUpdated(Map<String, Object> data) {
-        Object lastUpdatedObj = data.get("lastUpdated");
+        if (tvLastUpdated == null) return;
 
+        Object lastUpdatedObj = data.get("lastUpdated");
         if (lastUpdatedObj instanceof Timestamp) {
             Timestamp timestamp = (Timestamp) lastUpdatedObj;
             Date date = timestamp.toDate();
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm:ss a", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
             tvLastUpdated.setText("Last updated: " + sdf.format(date));
         } else if (lastUpdatedObj instanceof String) {
             tvLastUpdated.setText("Last updated: " + lastUpdatedObj.toString());
-        } else if (data.containsKey("createdAt")) {
+        } else {
             Object createdAtObj = data.get("createdAt");
             if (createdAtObj instanceof Timestamp) {
                 Timestamp timestamp = (Timestamp) createdAtObj;
                 Date date = timestamp.toDate();
-                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm:ss a", Locale.getDefault());
+                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
                 tvLastUpdated.setText("Created: " + sdf.format(date));
             } else {
-                tvLastUpdated.setText("Created: " + createdAtObj.toString());
+                tvLastUpdated.setText("Last updated: N/A");
             }
-        } else {
-            tvLastUpdated.setText("Last updated: N/A");
         }
     }
 
     private void populateField(TextView textView, Map<String, Object> data, String... possibleKeys) {
+        if (textView == null) return;
+
         String value = getFieldValue(data, possibleKeys);
-        String fieldName = textView != null ? getResourceName(textView.getId()) : "unknown";
-
-        if (value != null && !value.isEmpty()) {
-            textView.setText(value);
-            Log.d(TAG, "Set " + fieldName + " to: " + value);
-        } else {
-            textView.setText("N/A");
-            Log.d(TAG, "Set " + fieldName + " to: N/A (no value found for keys: " +
-                    java.util.Arrays.toString(possibleKeys) + ")");
-        }
-    }
-
-    private String getResourceName(int resourceId) {
-        try {
-            return getResources().getResourceEntryName(resourceId);
-        } catch (Exception e) {
-            return "unknown_resource";
-        }
+        textView.setText(value != null && !value.isEmpty() ? value : "N/A");
     }
 
     private String getFieldValue(Map<String, Object> data, String... possibleKeys) {
-        if (data == null) {
-            Log.d(TAG, "Data map is null");
-            return null;
-        }
+        if (data == null) return null;
 
         for (String key : possibleKeys) {
             if (data.containsKey(key) && data.get(key) != null) {
                 Object value = data.get(key);
                 String stringValue = value.toString().trim();
                 if (!stringValue.isEmpty() && !stringValue.equalsIgnoreCase("null")) {
-                    Log.d(TAG, "Found value for key '" + key + "': " + stringValue);
                     return stringValue;
                 }
             }
         }
-        Log.d(TAG, "No value found for any of these keys: " + java.util.Arrays.toString(possibleKeys));
         return null;
     }
 
     private void handleLoadError(Exception e) {
         showLoading(false);
         Log.e(TAG, "Error loading farmer data", e);
-        Toast.makeText(this, "Failed to load farmer data: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Failed to load farmer data", Toast.LENGTH_SHORT).show();
 
-        // Show retry option
         new AlertDialog.Builder(this)
                 .setTitle("Error Loading Data")
                 .setMessage("Failed to load farmer information. Would you like to try again?")
@@ -589,18 +539,29 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         showLoading(true);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Determine which collection to delete from
-        DocumentReference docRef;
-        if (currentBarangay != null && !currentBarangay.isEmpty()) {
-            docRef = db.collection("Barangays").document(currentBarangay)
-                    .collection("Farmers").document(documentId);
-        } else {
-            docRef = db.collection("Farmers").document(documentId);
+        // Get farmer name for logging before deletion
+        String farmerName = tvFullName.getText().toString();
+        if (farmerName.equals("N/A") || farmerName.isEmpty()) {
+            farmerName = "Unknown Farmer";
         }
 
+        String barangayForLogging = currentBarangay != null ? currentBarangay : "Unknown Barangay";
+
+        // Delete from the correct collection structure
+        DocumentReference docRef = db.collection("Barangays").document(currentBarangay)
+                .collection("Farmers").document(documentId);
+
+        Log.d(TAG, "Deleting farmer from: " + docRef.getPath());
+
+        String finalFarmerName = farmerName;
         docRef.delete()
                 .addOnSuccessListener(aVoid -> {
                     showLoading(false);
+
+                    // Log the farmer removal activity
+                    Log.d(TAG, "Logging farmer removal: " + finalFarmerName + " from " + barangayForLogging);
+                    ActivityLogger.logFarmerRemoved(barangayForLogging, finalFarmerName);
+
                     Toast.makeText(this, "Farmer deleted successfully", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Farmer successfully deleted");
 
@@ -611,10 +572,8 @@ public class FarmersDetailsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     showLoading(false);
                     Log.e(TAG, "Error deleting farmer", e);
-                    Toast.makeText(this, "Failed to delete farmer: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Failed to delete farmer: " + e.getMessage(), Toast.LENGTH_LONG).show();
 
-                    // Show retry option
                     new AlertDialog.Builder(this)
                             .setTitle("Delete Failed")
                             .setMessage("Failed to delete farmer. Would you like to try again?")
@@ -628,7 +587,11 @@ public class FarmersDetailsActivity extends AppCompatActivity {
         if (progressBar != null) {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
         }
-        btnDelete.setEnabled(!show);
-        btnEdit.setEnabled(!show);
+        if (btnDelete != null) {
+            btnDelete.setEnabled(!show);
+        }
+        if (btnEdit != null) {
+            btnEdit.setEnabled(!show);
+        }
     }
 }

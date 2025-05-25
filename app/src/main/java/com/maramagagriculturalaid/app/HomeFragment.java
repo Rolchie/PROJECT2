@@ -24,16 +24,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.maramagagriculturalaid.app.FarmersData.ActivityItem;
 import com.maramagagriculturalaid.app.FarmersData.AddFarmerAcitivity;
 import com.maramagagriculturalaid.app.FarmersData.FarmersDataFragment;
 import com.maramagagriculturalaid.app.SubsidyManagement.SubsidyListActivity;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 public class HomeFragment extends Fragment {
 
@@ -49,7 +45,7 @@ public class HomeFragment extends Fragment {
     private String userId;
     private String userBarangay;
 
-    private List<ActivityItem> allActivities = new ArrayList<>();
+    private List<ActivityItem> recentActivities = new ArrayList<>();
     private RecentActivityAdapter activityAdapter;
 
     @Override
@@ -80,8 +76,7 @@ public class HomeFragment extends Fragment {
         Log.d(TAG, "onResume called");
         if (userBarangay != null && !userBarangay.isEmpty()) {
             loadRecentActivities();
-        } else {
-            Log.w(TAG, "onResume: userBarangay is null or empty");
+            loadSubsidyRequestCounts();
         }
     }
 
@@ -111,13 +106,11 @@ public class HomeFragment extends Fragment {
                     String email = document.getString("Email");
 
                     Log.d(TAG, "User barangay loaded: '" + userBarangay + "'");
-                    Log.d(TAG, "User email loaded: '" + email + "'");
 
                     if (userBarangay != null) {
                         titleText.setText("Barangay " + userBarangay);
                         loadRecentActivities();
-                    } else {
-                        Log.w(TAG, "User barangay is null");
+                        loadSubsidyRequestCounts();
                     }
                     if (email != null) {
                         emailText.setText(email);
@@ -161,284 +154,120 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadRecentActivities() {
-        Log.d(TAG, "=== LOADING RECENT ACTIVITIES ===");
-        Log.d(TAG, "User barangay: '" + userBarangay + "'");
-
         if (userBarangay == null || userBarangay.isEmpty()) {
             Log.w(TAG, "Cannot load activities - barangay is null or empty");
-            showTestActivities(); // Show test activities for debugging
             return;
         }
 
-        allActivities.clear();
-        Log.d(TAG, "Cleared activities list");
+        Log.d(TAG, "Loading recent activities from: Barangays/" + userBarangay + "/Recent Activities");
 
-        // Load recent farmers first
-        loadRecentFarmers();
-    }
+        recentActivities.clear();
 
-    private void showTestActivities() {
-        Log.d(TAG, "Showing test activities for debugging");
-        allActivities.clear();
-
-        // Add test activities
-        ActivityItem testActivity1 = new ActivityItem();
-        testActivity1.setType("farmer_added");
-        testActivity1.setTitle("Added farmer");
-        testActivity1.setDescription("Test Farmer 1");
-        testActivity1.setTimestamp(System.currentTimeMillis() - (2 * 60 * 60 * 1000)); // 2 hours ago
-        allActivities.add(testActivity1);
-
-        ActivityItem testActivity2 = new ActivityItem();
-        testActivity2.setType("subsidy_added");
-        testActivity2.setTitle("Added subsidy application");
-        testActivity2.setDescription("Test Farmer 2 - Rice");
-        testActivity2.setTimestamp(System.currentTimeMillis() - (1 * 24 * 60 * 60 * 1000)); // 1 day ago
-        allActivities.add(testActivity2);
-
-        ActivityItem testActivity3 = new ActivityItem();
-        testActivity3.setType("farmer_edited");
-        testActivity3.setTitle("Edited farmer");
-        testActivity3.setDescription("Test Farmer 3");
-        testActivity3.setTimestamp(System.currentTimeMillis() - (30 * 60 * 1000)); // 30 minutes ago
-        allActivities.add(testActivity3);
-
-        Log.d(TAG, "Added " + allActivities.size() + " test activities");
-        updateActivityDisplay();
-    }
-
-    private void loadRecentFarmers() {
-        Log.d(TAG, "=== LOADING FARMERS ===");
-
-        // First, let's see ALL farmers to debug
-        db.collection("Farmers")
+        // Load from the Recent Activities collection in your database
+        db.collection("Barangays")
+                .document(userBarangay)
+                .collection("Recent Activities")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(3) // Only get the 3 most recent
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Log.d(TAG, "Total farmers in database: " + task.getResult().size());
-
-                        if (task.getResult().size() == 0) {
-                            Log.w(TAG, "No farmers found in database at all!");
-                            showTestActivities();
-                            return;
-                        }
-
-                        int matchingFarmers = 0;
+                        Log.d(TAG, "Successfully loaded activities. Count: " + task.getResult().size());
 
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             try {
-                                Log.d(TAG, "--- Farmer Document ---");
-                                Log.d(TAG, "Document ID: " + document.getId());
+                                Log.d(TAG, "Processing activity document: " + document.getId());
+                                Log.d(TAG, "Document data: " + document.getData());
 
-                                // Log all fields in the document
-                                Map<String, Object> data = document.getData();
-                                for (String key : data.keySet()) {
-                                    Log.d(TAG, "Field '" + key + "': " + data.get(key));
+                                ActivityItem activity = new ActivityItem();
+
+                                // Get activity data from document
+                                String type = document.getString("type");
+                                String title = document.getString("title");
+                                String description = document.getString("description");
+                                String farmerName = document.getString("farmerName");
+                                String cropsGrown = document.getString("cropsGrown");
+
+                                // Handle timestamp
+                                long timestamp = System.currentTimeMillis(); // Default
+                                Object timestampObj = document.get("timestamp");
+                                if (timestampObj instanceof Long) {
+                                    timestamp = (Long) timestampObj;
+                                } else if (timestampObj instanceof com.google.firebase.Timestamp) {
+                                    timestamp = ((com.google.firebase.Timestamp) timestampObj).getSeconds() * 1000;
                                 }
 
-                                // Check all possible barangay field names
-                                String docBarangay = document.getString("barangay");
-                                if (docBarangay == null) {
-                                    docBarangay = document.getString("Barangay");
-                                }
-                                if (docBarangay == null) {
-                                    docBarangay = document.getString("location");
-                                }
-                                if (docBarangay == null) {
-                                    docBarangay = document.getString("address");
-                                }
+                                // Set activity data
+                                activity.setType(type != null ? type : "unknown");
+                                activity.setTitle(title != null ? title : "Activity");
+                                activity.setDescription(description != null ? description : "No description");
+                                activity.setFarmerName(farmerName);
+                                activity.setCropsGrown(cropsGrown);
+                                activity.setTimestamp(timestamp);
 
-                                Log.d(TAG, "Document barangay: '" + docBarangay + "'");
-                                Log.d(TAG, "User barangay: '" + userBarangay + "'");
+                                recentActivities.add(activity);
 
-                                // Check if this farmer belongs to the user's barangay (case insensitive)
-                                boolean barangayMatches = false;
-                                if (docBarangay != null && userBarangay != null) {
-                                    barangayMatches = docBarangay.trim().equalsIgnoreCase(userBarangay.trim());
-                                }
-
-                                Log.d(TAG, "Barangay matches: " + barangayMatches);
-
-                                if (barangayMatches) {
-                                    matchingFarmers++;
-
-                                    ActivityItem activity = new ActivityItem();
-                                    activity.setType("farmer_added");
-                                    activity.setTitle("Added farmer");
-
-                                    // Get farmer name
-                                    String farmerName = document.getString("fullName");
-                                    if (farmerName == null || farmerName.trim().isEmpty()) {
-                                        String firstName = document.getString("firstName");
-                                        String lastName = document.getString("lastName");
-                                        farmerName = "";
-                                        if (firstName != null) farmerName += firstName;
-                                        if (lastName != null) farmerName += " " + lastName;
-                                        farmerName = farmerName.trim();
-                                    }
-
-                                    if (farmerName.isEmpty()) {
-                                        farmerName = "Unknown Farmer";
-                                    }
-
-                                    activity.setFarmerName(farmerName);
-                                    activity.setDescription(farmerName);
-
-                                    // Handle timestamp - try multiple field names
-                                    long timestamp = System.currentTimeMillis(); // Default to now
-                                    Object createdAtObj = document.get("createdAt");
-                                    if (createdAtObj == null) {
-                                        createdAtObj = document.get("timestamp");
-                                    }
-                                    if (createdAtObj == null) {
-                                        createdAtObj = document.get("dateCreated");
-                                    }
-                                    if (createdAtObj == null) {
-                                        createdAtObj = document.get("created_at");
-                                    }
-
-                                    Log.d(TAG, "Timestamp object: " + createdAtObj + " (type: " + (createdAtObj != null ? createdAtObj.getClass().getSimpleName() : "null") + ")");
-
-                                    if (createdAtObj instanceof Long) {
-                                        timestamp = (Long) createdAtObj;
-                                    } else if (createdAtObj instanceof com.google.firebase.Timestamp) {
-                                        timestamp = ((com.google.firebase.Timestamp) createdAtObj).getSeconds() * 1000;
-                                    } else {
-                                        Log.w(TAG, "No valid timestamp found, using current time");
-                                        timestamp = System.currentTimeMillis();
-                                    }
-
-                                    activity.setTimestamp(timestamp);
-                                    allActivities.add(activity);
-
-                                    Log.d(TAG, "✓ Added farmer activity: " + farmerName + " at " + timestamp);
-                                } else {
-                                    Log.d(TAG, "✗ Farmer doesn't match barangay");
-                                }
-
-                                Log.d(TAG, "--- End Farmer Document ---");
+                                Log.d(TAG, "Added activity: " + activity.getTitle() + " - " + activity.getDescription());
 
                             } catch (Exception e) {
-                                Log.e(TAG, "Error parsing farmer document: " + document.getId(), e);
+                                Log.e(TAG, "Error parsing activity document: " + document.getId(), e);
                             }
                         }
 
-                        Log.d(TAG, "=== FARMERS SUMMARY ===");
-                        Log.d(TAG, "Total farmers: " + task.getResult().size());
-                        Log.d(TAG, "Matching farmers: " + matchingFarmers);
-                        Log.d(TAG, "Activities added: " + allActivities.size());
-
-                        if (allActivities.isEmpty()) {
-                            Log.w(TAG, "No farmer activities found, showing test activities");
-                            showTestActivities();
-                        } else {
-                            // Load crop applications
-                            loadRecentCropApplications();
-                        }
+                        updateActivityDisplay();
 
                     } else {
-                        Log.e(TAG, "Error loading farmers", task.getException());
-                        showTestActivities();
+                        Log.e(TAG, "Error loading recent activities", task.getException());
+                        showEmptyActivities();
                     }
                 });
     }
 
-    private void loadRecentCropApplications() {
-        Log.d(TAG, "=== LOADING CROP APPLICATIONS ===");
+    private void loadSubsidyRequestCounts() {
+        if (userBarangay == null || userBarangay.isEmpty()) {
+            return;
+        }
 
-        db.collection("Crop")
+        Log.d(TAG, "Loading subsidy request counts from: Barangays/" + userBarangay + "/SubsidyRequests");
+
+        // Load subsidy requests to count statuses
+        db.collection("Barangays")
+                .document(userBarangay)
+                .collection("SubsidyRequests")
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Log.d(TAG, "Total crop applications: " + task.getResult().size());
-
                         int pending = 0, approved = 0, rejected = 0;
-                        int matchingCrops = 0;
 
                         for (QueryDocumentSnapshot document : task.getResult()) {
-                            try {
-                                // Check barangay
-                                String docBarangay = document.getString("barangay");
-                                if (docBarangay == null) {
-                                    docBarangay = document.getString("Barangay");
+                            String status = document.getString("status");
+                            if (status != null) {
+                                switch (status.toLowerCase().trim()) {
+                                    case "pending":
+                                        pending++;
+                                        break;
+                                    case "approved":
+                                        approved++;
+                                        break;
+                                    case "rejected":
+                                        rejected++;
+                                        break;
                                 }
-
-                                // Count all for status regardless of barangay
-                                String status = document.getString("status");
-                                if (status != null) {
-                                    switch (status.toLowerCase().trim()) {
-                                        case "pending":
-                                            pending++;
-                                            break;
-                                        case "approved":
-                                            approved++;
-                                            break;
-                                        case "rejected":
-                                            rejected++;
-                                            break;
-                                    }
-                                } else {
-                                    pending++;
-                                }
-
-                                // Only add to activities if it matches the barangay
-                                if (docBarangay != null && docBarangay.equalsIgnoreCase(userBarangay)) {
-                                    matchingCrops++;
-
-                                    ActivityItem activity = new ActivityItem();
-                                    activity.setType("subsidy_added");
-                                    activity.setTitle("Added subsidy application");
-
-                                    String farmerName = document.getString("farmerName");
-                                    String cropsGrown = document.getString("cropsGrown");
-
-                                    activity.setFarmerName(farmerName);
-                                    activity.setCropsGrown(cropsGrown);
-
-                                    String description = farmerName != null ? farmerName : "Unknown Farmer";
-                                    if (cropsGrown != null && !cropsGrown.trim().isEmpty()) {
-                                        description += " - " + cropsGrown;
-                                    }
-                                    activity.setDescription(description);
-
-                                    // Handle timestamp
-                                    long timestamp = System.currentTimeMillis();
-                                    Object createdAtObj = document.get("createdAt");
-                                    if (createdAtObj instanceof Long) {
-                                        timestamp = (Long) createdAtObj;
-                                    } else if (createdAtObj instanceof com.google.firebase.Timestamp) {
-                                        timestamp = ((com.google.firebase.Timestamp) createdAtObj).getSeconds() * 1000;
-                                    }
-
-                                    activity.setTimestamp(timestamp);
-                                    allActivities.add(activity);
-
-                                    Log.d(TAG, "Added subsidy activity: " + description);
-                                }
-
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error parsing crop document: " + document.getId(), e);
+                            } else {
+                                pending++; // Default to pending if no status
                             }
                         }
 
-                        Log.d(TAG, "=== CROP APPLICATIONS SUMMARY ===");
-                        Log.d(TAG, "Total crops: " + task.getResult().size());
-                        Log.d(TAG, "Matching crops: " + matchingCrops);
-                        Log.d(TAG, "Total activities now: " + allActivities.size());
-
-                        // Update status counts
+                        Log.d(TAG, "Subsidy counts - Pending: " + pending + ", Approved: " + approved + ", Rejected: " + rejected);
                         updateStatusCounts(pending, approved, rejected);
-                        updateActivityDisplay();
 
                     } else {
-                        Log.e(TAG, "Error loading crop applications", task.getException());
-                        updateActivityDisplay();
+                        Log.e(TAG, "Error loading subsidy requests", task.getException());
                     }
                 });
     }
 
     private void updateStatusCounts(int pending, int approved, int rejected) {
-        Log.d(TAG, "Updating status counts - Pending: " + pending + ", Approved: " + approved + ", Rejected: " + rejected);
         if (getActivity() != null) {
             getActivity().runOnUiThread(() -> {
                 tvpendingCount.setText(String.valueOf(pending));
@@ -449,28 +278,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateActivityDisplay() {
-        Log.d(TAG, "=== UPDATING ACTIVITY DISPLAY ===");
-        Log.d(TAG, "Total activities before sorting: " + allActivities.size());
-
-        // Sort all activities by timestamp (most recent first)
-        Collections.sort(allActivities, new Comparator<ActivityItem>() {
-            @Override
-            public int compare(ActivityItem a, ActivityItem b) {
-                return Long.compare(b.getTimestamp(), a.getTimestamp());
-            }
-        });
-
-        // Take only the most recent 3 activities
-        List<ActivityItem> recentActivities = new ArrayList<>();
-        for (int i = 0; i < Math.min(3, allActivities.size()); i++) {
-            recentActivities.add(allActivities.get(i));
-        }
-
-        Log.d(TAG, "Displaying recent activities count: " + recentActivities.size());
-        for (int i = 0; i < recentActivities.size(); i++) {
-            ActivityItem activity = recentActivities.get(i);
-            Log.d(TAG, "Activity " + (i+1) + ": " + activity.getTitle() + " - " + activity.getDescription() + " (timestamp: " + activity.getTimestamp() + ")");
-        }
+        Log.d(TAG, "Updating activity display with " + recentActivities.size() + " activities");
 
         if (getActivity() != null) {
             getActivity().runOnUiThread(() -> {
@@ -482,19 +290,22 @@ public class HomeFragment extends Fragment {
                     Log.d(TAG, "Updating existing adapter");
                     activityAdapter.updateActivities(recentActivities);
                 }
-                Log.d(TAG, "Adapter updated successfully");
             });
-        } else {
-            Log.w(TAG, "Activity is null, cannot update UI");
         }
+    }
+
+    private void showEmptyActivities() {
+        Log.d(TAG, "Showing empty activities state");
+        recentActivities.clear();
+        updateActivityDisplay();
     }
 
     private void setupRecyclerView() {
         activityRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        activityRecyclerView.setNestedScrollingEnabled(false);
 
-        // Show loading state
-        List<ActivityItem> loading = new ArrayList<>();
-        activityAdapter = new RecentActivityAdapter(loading);
+        // Initialize with empty list
+        activityAdapter = new RecentActivityAdapter(recentActivities);
         activityRecyclerView.setAdapter(activityAdapter);
 
         Log.d(TAG, "RecyclerView setup complete");

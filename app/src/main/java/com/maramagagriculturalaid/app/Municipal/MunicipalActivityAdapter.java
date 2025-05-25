@@ -111,13 +111,10 @@ public class MunicipalActivityAdapter extends RecyclerView.Adapter<MunicipalActi
             }
         }
 
-        // Set click listener
-        holder.itemView.setOnClickListener(v -> {
-            if (context != null) {
-                String title = item.getTitle();
-                Toast.makeText(context, title != null ? title : "Activity", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Remove click listener - activities are now not clickable
+        holder.itemView.setOnClickListener(null);
+        holder.itemView.setClickable(false);
+        holder.itemView.setFocusable(false);
     }
 
     @Override

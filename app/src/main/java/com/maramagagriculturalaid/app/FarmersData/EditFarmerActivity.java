@@ -10,17 +10,22 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.maramagagriculturalaid.app.R;
 
 public class EditFarmerActivity extends AppCompatActivity {
 
     private static final String TAG = "EditFarmerActivity";
+    private static final int EDIT_FARM_INFO_REQUEST_CODE = 100;
 
     // UI Components
     private ImageButton btnBack;
@@ -32,6 +37,14 @@ public class EditFarmerActivity extends AppCompatActivity {
     // Data
     private FirebaseFirestore db;
     private String farmerId, farmerName, barangay, farmerDocumentId;
+
+    // Predefined barangays in Maramag Municipality
+    private final String[] availableBarangays = {
+            "Anahawon", "Base Camp", "Bayabason", "Camp 1", "Colambugon",
+            "Dagumba-an", "Danggawan", "Dologon", "Kisanday", "Kuya",
+            "La Roxas", "Panadtalan", "Panalsalan", "North Poblacion", "South Poblacion",
+            "San Miguel", "San Roque", "Tubigon", "Kiharong", "Bagongsilang"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,13 +65,203 @@ public class EditFarmerActivity extends AppCompatActivity {
 
         initViews();
         setupClickListeners();
-        loadFarmerData();
+
+        // Handle missing barangay information gracefully
+        if (barangay == null || barangay.isEmpty()) {
+            handleMissingBarangay();
+        } else {
+            // Validate barangay exists in our predefined list
+            boolean isValidBarangay = false;
+            for (String validBarangay : availableBarangays) {
+                if (validBarangay.equalsIgnoreCase(barangay)) {
+                    barangay = validBarangay; // Use correct case
+                    isValidBarangay = true;
+                    break;
+                }
+            }
+
+            if (isValidBarangay) {
+                loadFarmerData();
+            } else {
+                Log.w(TAG, "Invalid barangay: " + barangay);
+                handleMissingBarangay();
+            }
+        }
+    }
+
+    private void handleMissingBarangay() {
+        Log.w(TAG, "Missing or invalid barangay information, attempting to resolve...");
+
+        // Try to get barangay from user's profile or farmer data
+        if (farmerId != null || farmerDocumentId != null) {
+            attemptBarangayRecovery();
+        } else {
+            showBarangaySelectionDialog();
+        }
+    }
+
+    private void attemptBarangayRecovery() {
+        Log.d(TAG, "Attempting to recover barangay information...");
+
+        // First, try to get user's barangay from their profile
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            if (progressOverlay != null) {
+                progressOverlay.setVisibility(View.VISIBLE);
+            }
+
+            db.collection("Users")
+                    .document(currentUser.getUid())
+                    .get()
+                    .addOnSuccessListener(userDocument -> {
+                        if (userDocument.exists()) {
+                            String userBarangay = userDocument.getString("Barangay");
+                            if (userBarangay == null || userBarangay.isEmpty()) {
+                                userBarangay = userDocument.getString("barangay");
+                            }
+
+                            if (userBarangay != null && !userBarangay.isEmpty()) {
+                                // Validate the barangay
+                                for (String validBarangay : availableBarangays) {
+                                    if (validBarangay.equalsIgnoreCase(userBarangay)) {
+                                        barangay = validBarangay;
+                                        Log.d(TAG, "Recovered barangay from user profile: " + barangay);
+                                        if (progressOverlay != null) {
+                                            progressOverlay.setVisibility(View.GONE);
+                                        }
+                                        loadFarmerData();
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                        // If user barangay not found, try searching all barangays for the farmer
+                        searchFarmerInAllBarangays();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error getting user barangay", e);
+                        searchFarmerInAllBarangays();
+                    });
+        } else {
+            searchFarmerInAllBarangays();
+        }
+    }
+
+    private void searchFarmerInAllBarangays() {
+        Log.d(TAG, "Searching for farmer in all barangays...");
+
+        if (progressOverlay != null) {
+            progressOverlay.setVisibility(View.VISIBLE);
+        }
+
+        // Search for the farmer in all available barangays
+        searchInBarangayList(0);
+    }
+
+    private void searchInBarangayList(int barangayIndex) {
+        if (barangayIndex >= availableBarangays.length) {
+            // Farmer not found in any barangay
+            if (progressOverlay != null) {
+                progressOverlay.setVisibility(View.GONE);
+            }
+            Log.w(TAG, "Farmer not found in any barangay");
+            showBarangaySelectionDialog();
+            return;
+        }
+
+        String searchBarangay = availableBarangays[barangayIndex];
+        Log.d(TAG, "Searching in barangay: " + searchBarangay);
+
+        // Search by farmer document ID first
+        if (farmerDocumentId != null && !farmerDocumentId.isEmpty()) {
+            db.collection("Barangays")
+                    .document(searchBarangay)
+                    .collection("Farmers")
+                    .document(farmerDocumentId)
+                    .get()
+                    .addOnSuccessListener(document -> {
+                        if (document.exists()) {
+                            barangay = searchBarangay;
+                            Log.d(TAG, "Found farmer by document ID in barangay: " + barangay);
+                            if (progressOverlay != null) {
+                                progressOverlay.setVisibility(View.GONE);
+                            }
+                            loadFarmerData();
+                        } else {
+                            // Try searching by farmer ID in this barangay
+                            searchByFarmerIdInBarangay(searchBarangay, barangayIndex);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error searching in barangay: " + searchBarangay, e);
+                        searchByFarmerIdInBarangay(searchBarangay, barangayIndex);
+                    });
+        } else {
+            searchByFarmerIdInBarangay(searchBarangay, barangayIndex);
+        }
+    }
+
+    private void searchByFarmerIdInBarangay(String searchBarangay, int barangayIndex) {
+        if (farmerId != null && !farmerId.isEmpty()) {
+            db.collection("Barangays")
+                    .document(searchBarangay)
+                    .collection("Farmers")
+                    .whereEqualTo("farmerId", farmerId)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        if (!querySnapshot.isEmpty()) {
+                            barangay = searchBarangay;
+                            for (QueryDocumentSnapshot document : querySnapshot) {
+                                farmerDocumentId = document.getId();
+                                break;
+                            }
+                            Log.d(TAG, "Found farmer by farmer ID in barangay: " + barangay);
+                            if (progressOverlay != null) {
+                                progressOverlay.setVisibility(View.GONE);
+                            }
+                            loadFarmerData();
+                        } else {
+                            // Continue searching in next barangay
+                            searchInBarangayList(barangayIndex + 1);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error searching by farmer ID in barangay: " + searchBarangay, e);
+                        searchInBarangayList(barangayIndex + 1);
+                    });
+        } else {
+            // No farmer ID to search with, continue to next barangay
+            searchInBarangayList(barangayIndex + 1);
+        }
+    }
+
+    private void showBarangaySelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Barangay");
+        builder.setMessage("Please select the barangay where this farmer is located:");
+
+        builder.setItems(availableBarangays, (dialog, which) -> {
+            barangay = availableBarangays[which];
+            Log.d(TAG, "User selected barangay: " + barangay);
+            loadFarmerData();
+            dialog.dismiss();
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            Toast.makeText(this, "Cannot proceed without barangay information", Toast.LENGTH_LONG).show();
+            finish();
+        });
+
+        builder.setCancelable(false);
+        builder.show();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btn_back);
         tvTitle = findViewById(R.id.tv_title);
-        tvFarmerId = findViewById(R.id.tv_farmer_id); // Add this TextView for farmer ID
+        tvFarmerId = findViewById(R.id.tv_farmer_id);
         etFirstName = findViewById(R.id.et_first_name);
         etMiddleName = findViewById(R.id.et_middle_initial);
         etLastName = findViewById(R.id.et_last_name);
@@ -115,9 +318,9 @@ public class EditFarmerActivity extends AppCompatActivity {
     }
 
     private void loadFarmerData() {
-        if (barangay == null) {
-            Toast.makeText(this, "Missing barangay information", Toast.LENGTH_SHORT).show();
-            finish();
+        if (barangay == null || barangay.isEmpty()) {
+            Toast.makeText(this, "Cannot load farmer data: Missing barangay information", Toast.LENGTH_SHORT).show();
+            handleMissingBarangay();
             return;
         }
 
@@ -157,7 +360,7 @@ public class EditFarmerActivity extends AppCompatActivity {
                 DocumentSnapshot document = task.getResult();
                 if (document.exists()) {
                     Log.d(TAG, "Farmer found by document ID: " + documentId);
-                    Log.d(TAG, "Document data: " + document.getData()); // Debug log to see all fields
+                    Log.d(TAG, "Document data: " + document.getData());
                     if (progressOverlay != null) {
                         progressOverlay.setVisibility(View.GONE);
                     }
@@ -204,7 +407,7 @@ public class EditFarmerActivity extends AppCompatActivity {
                     if (task.isSuccessful() && !task.getResult().isEmpty()) {
                         for (com.google.firebase.firestore.QueryDocumentSnapshot document : task.getResult()) {
                             Log.d(TAG, "Farmer found by farmer ID: " + searchFarmerId + ", Document ID: " + document.getId());
-                            Log.d(TAG, "Document data: " + document.getData()); // Debug log
+                            Log.d(TAG, "Document data: " + document.getData());
                             if (progressOverlay != null) {
                                 progressOverlay.setVisibility(View.GONE);
                             }
@@ -237,7 +440,7 @@ public class EditFarmerActivity extends AppCompatActivity {
             // Get farmer ID and display it
             String farmerIdFromDb = document.getString("farmerId");
             String firstName = document.getString("firstName");
-            String middleInitial = document.getString("middleInitial"); // Note: using middleInitial, not middleName
+            String middleInitial = document.getString("middleInitial");
             String lastName = document.getString("lastName");
             String birthday = document.getString("birthday");
 
@@ -327,6 +530,7 @@ public class EditFarmerActivity extends AppCompatActivity {
         return isValid;
     }
 
+    // FIXED: Updated to use startActivityForResult and handle the result properly
     private void proceedToFarmInformation() {
         // Create the updated farmer name
         String firstName = etFirstName != null ? etFirstName.getText().toString().trim() : "";
@@ -343,7 +547,7 @@ public class EditFarmerActivity extends AppCompatActivity {
         // Pass all the data to EditFarmInformationActivity
         Intent intent = new Intent(this, EditFarmInformationActivity.class);
 
-        // Pass original identifiers
+        // Pass original identifiers - IMPORTANT: Make sure barangay is passed!
         intent.putExtra("farmerId", farmerId);
         intent.putExtra("farmerName", updatedFarmerName);
         intent.putExtra("barangay", barangay);
@@ -357,18 +561,18 @@ public class EditFarmerActivity extends AppCompatActivity {
         String contactNumber = etContactNumber != null ? etContactNumber.getText().toString().trim() : "";
         intent.putExtra("contactNumber", contactNumber);
 
-        Log.d(TAG, "Proceeding to EditFarmInformationActivity with updated data");
-        startActivityForResult(intent, 100);
+        Log.d(TAG, "Proceeding to EditFarmInformationActivity with barangay: " + barangay);
+        startActivityForResult(intent, EDIT_FARM_INFO_REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 100) {
+        if (requestCode == EDIT_FARM_INFO_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 // Farm information was saved successfully
-                // Return to the previous activity with success result
+                // Return to the previous activity (FarmersDetailsActivity) with success result
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra("updated", true);
                 setResult(RESULT_OK, resultIntent);
